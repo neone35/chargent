@@ -1,0 +1,65 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "com.github.neone35.chargent"
+        minSdkVersion 15
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "com.android.support:appcompat-v7:$rootProject.lib_v" // depends on v4
+    implementation "com.android.support:animated-vector-drawable:$rootProject.lib_v"
+    implementation "com.android.support:support-media-compat:$rootProject.lib_v"
+    implementation "com.android.support:support-v4:$rootProject.lib_v"
+    implementation "com.android.support:design:$rootProject.lib_v" // material
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    implementation 'com.google.android.gms:play-services-maps:15.0.1'
+    implementation 'com.google.android.gms:play-services-location:15.0.1'
+
+    // 3RD PARTY
+    // reactive
+    implementation 'io.reactivex:rxandroid:1.2.1'
+    implementation 'io.reactivex:rxjava:1.3.8'
+    implementation 'com.jakewharton.rxbinding:rxbinding:1.0.1' // views
+    implementation 'com.jakewharton.rxbinding:rxbinding-support-v4:1.0.1'
+    implementation 'com.jakewharton.rxbinding:rxbinding-appcompat-v7:1.0.1'
+    implementation 'com.github.tbruyelle:rxpermissions:0.10.2' // permissions
+    implementation 'com.patloew.rxlocation:rxlocation:1.0.5' // location
+    // network
+    implementation "com.squareup.retrofit2:retrofit:$rootProject.retrofit_v" // network calls
+    implementation "com.squareup.retrofit2:converter-gson:$rootProject.retrofit_v" // gson & retrofit
+    implementation 'com.google.code.gson:gson:2.8.5' // parsing
+    implementation "com.facebook.stetho:stetho:$rootProject.stetho_v" // debugging in chrome
+    implementation "com.facebook.stetho:stetho-okhttp3:$rootProject.stetho_v"
+    // loading images
+    implementation "com.github.bumptech.glide:glide:$rootProject.glide_v"
+    annotationProcessor "com.github.bumptech.glide:compiler:$rootProject.glide_v"
+    // R class binding
+    implementation "com.jakewharton:butterknife:$rootProject.butterknife_v"
+    annotationProcessor "com.jakewharton:butterknife-compiler:$rootProject.butterknife_v"
+    // logging
+    implementation 'com.orhanobut:logger:2.2.0' // pretty logger
+    implementation 'com.blankj:utilcode:1.17.3' // helper methods
+
+    // TEST
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
