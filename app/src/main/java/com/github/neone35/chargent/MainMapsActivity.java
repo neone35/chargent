@@ -1,8 +1,15 @@
 package com.github.neone35.chargent;
 
-import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.ActionBar;
+import butterknife.BindString;
+import butterknife.ButterKnife;
 
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+
+import com.blankj.utilcode.util.ToastUtils;
 import com.facebook.stetho.Stetho;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -13,18 +20,25 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.Logger;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+
+    @BindString(R.string.app_name)
+    String appName;
+    @BindString(R.string.activity_maps_title)
+    String mapsActivityTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setDebugConfig();
-        setContentView(R.layout.activity_maps);
+        setContentView(R.layout.activity_main_maps);
+        ButterKnife.bind(this);
+        setActionBar();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+                .findFragmentById(R.id.frag_map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         } else {
@@ -32,11 +46,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void setDebugConfig () {
+    private void setDebugConfig() {
         Stetho.initializeWithDefaults(this);
         Logger.addLogAdapter(new AndroidLogAdapter());
     }
 
+    private void setActionBar() {
+        ActionBar ab = getSupportActionBar();
+        if (ab != null) {
+            ab.setTitle(appName);
+            ab.setSubtitle(mapsActivityTitle);
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_appbar, menu);
+        return true;
+    }
 
     /**
      * Manipulates the map once available.

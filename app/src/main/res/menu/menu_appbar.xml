@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_appbar_filter"
+        android:title="@string/menu_appbar_filter_label"
+        app:showAsAction="ifRoom" >
+        <menu>
+            <item android:id="@+id/menu_appbar_filter_plate"
+                android:icon="@drawable/ic_plate_24dp"
+                app:iconTint="@color/colorPrimaryDark"
+                android:title="@string/menu_appbar_filter_plate_label" />
+            <item android:id="@+id/menu_appbar_filter_battery"
+                android:icon="@drawable/ic_battery_24dp"
+                app:iconTint="@color/colorPrimaryDark"
+                android:title="@string/menu_appbar_filter_battery_label" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/menu_appbar_sort"
+        android:title="@string/menu_appbar_sort_label"
+        app:showAsAction="ifRoom">
+        <menu>
+            <item android:id="@+id/menu_appbar_sort_distance"
+                android:icon="@drawable/ic_distance_24dp"
+                app:iconTint="@color/colorPrimaryDark"
+                android:title="@string/menu_appbar_sort_distance_label" />
+        </menu>
+    </item>
+</menu>
