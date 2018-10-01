@@ -29,6 +29,7 @@ dependencies {
     implementation "com.google.android.material:material:$rootProject.x_v"
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha2'
     implementation 'com.google.android.gms:play-services-maps:15.0.1'
+    implementation 'com.google.maps.android:android-maps-utils:0.5' // additional decoration
     implementation 'com.google.android.gms:play-services-location:15.0.1'
 
     // 3RD PARTY

@@ -9,7 +9,7 @@ import rx.Scheduler;
 
 class CarVM {
 
-    // overrriden actions of service
+    // service actions (overriden in implementation)
     private CarInteractor carInteractor;
     // main thread scheduler
     private Scheduler scheduler;
@@ -19,7 +19,9 @@ class CarVM {
         this.scheduler = scheduler;
     }
 
+    // subscribed to & observed by activity/fragment
     Observable<List<Car>> fetch() {
+        // make sure observation is done on right thread (main)
         return carInteractor.fetch().observeOn(scheduler);
     }
 }
