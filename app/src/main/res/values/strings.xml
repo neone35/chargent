@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Chargent</string>
-    <string name="activity_maps_title">Map</string>
     <string name="nav_map_label">Map</string>
     <string name="nav_list_label">List</string>
     <string name="menu_appbar_filter_label">Filter</string>
@@ -8,4 +7,5 @@
     <string name="menu_appbar_filter_plate_label">by plate number</string>
     <string name="menu_appbar_filter_battery_label">by remaining battery</string>
     <string name="menu_appbar_sort_distance_label">by distance</string>
+    <string name="no_internet">No internet connection</string>
 </resources>

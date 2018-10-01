@@ -43,13 +43,14 @@ dependencies {
     // network
     implementation "com.squareup.retrofit2:retrofit:$rootProject.retrofit_v" // network calls
     implementation "com.squareup.retrofit2:converter-gson:$rootProject.retrofit_v" // gson & retrofit
+    implementation "com.squareup.retrofit2:adapter-rxjava:$rootProject.retrofit_v" // rx & retrofit
     implementation 'com.google.code.gson:gson:2.8.5' // parsing
     implementation "com.facebook.stetho:stetho:$rootProject.stetho_v" // debugging in chrome
     implementation "com.facebook.stetho:stetho-okhttp3:$rootProject.stetho_v"
-    // loading images
+    // images
     implementation "com.github.bumptech.glide:glide:$rootProject.glide_v"
     annotationProcessor "com.github.bumptech.glide:compiler:$rootProject.glide_v"
-    // R binding
+    // binding
     implementation "com.jakewharton:butterknife:$rootProject.butterknife_v"
     annotationProcessor "com.jakewharton:butterknife-compiler:$rootProject.butterknife_v"
     // logging

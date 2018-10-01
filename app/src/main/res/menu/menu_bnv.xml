@@ -2,13 +2,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_favorites"
+        android:id="@+id/bnv_action_map"
         android:enabled="true"
         android:icon="@drawable/ic_map_24dp"
         android:title="@string/nav_map_label"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_schedules"
+        android:id="@+id/bnv_action_list"
         android:enabled="true"
         android:icon="@drawable/ic_list_24dp"
         android:title="@string/nav_list_label"
