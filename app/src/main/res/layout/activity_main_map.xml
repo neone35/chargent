@@ -7,7 +7,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainMapsActivity">
+    tools:context=".map.MainMapActivity">
 
     <FrameLayout
         android:id="@+id/frag_main"

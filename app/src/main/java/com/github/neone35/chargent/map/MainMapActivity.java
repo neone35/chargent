@@ -1,4 +1,4 @@
-package com.github.neone35.chargent;
+package com.github.neone35.chargent.map;
 
 import android.Manifest;
 import android.content.Context;
@@ -8,11 +8,16 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcelable;
 import android.view.Menu;
 import android.view.MenuInflater;
 
 import com.blankj.utilcode.util.ToastUtils;
 import com.facebook.stetho.Stetho;
+import com.github.neone35.chargent.CarInteractorImpl;
+import com.github.neone35.chargent.CarVM;
+import com.github.neone35.chargent.R;
+import com.github.neone35.chargent.list.CarListFragment;
 import com.github.neone35.chargent.model.Car;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.CameraUpdate;
@@ -22,12 +27,15 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.Logger;
 import com.patloew.rxlocation.RxLocation;
 import com.tbruyelle.rxpermissions2.RxPermissions;
+
+import org.parceler.Parcels;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +55,7 @@ import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.subscriptions.CompositeSubscription;
 
-public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MainMapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     // keep all subscribtions to observables in one variable to easily unsubscribe
@@ -61,6 +69,8 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     private SupportMapFragment mMapFragment;
     private CarListFragment mListFragment;
     private ArrayList<Car> carList = new ArrayList<>();
+    private final String STATE_KEY_CARS_PARCELABLE = "state_cars_parcelable";
+    private final String STATE_KEY_MAP_CAMERA = "state_map_camera";
 
     @BindView(R.id.bnv_main)
     BottomNavigationView bnvMain;
@@ -81,7 +91,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_maps);
+        setContentView(R.layout.activity_main_map);
         rxLocation = new RxLocation(this);
         rxPermissions = new RxPermissions(this);
         mFragmentManager = getSupportFragmentManager();
@@ -94,8 +104,6 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
 
         // only create fragment if there was no configuration change
         if (savedInstanceState == null) {
-            // obtain the SupportMapFragment
-            mMapFragment = new SupportMapFragment();
             inflateMapFragment();
         }
 
@@ -105,11 +113,14 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     private void inflateMapFragment() {
         setActionBar(appName, mapTitle);
         if (!mFragmentManager.getFragments().contains(mMapFragment)) {
+            // obtain the SupportMapFragment
+            mMapFragment = new SupportMapFragment();
             mFragmentManager.beginTransaction()
                     .replace(R.id.frag_main, mMapFragment)
                     .commit();
             // get notified when the map is ready to be used.
             mMapFragment.getMapAsync(this);
+            mMapFragment.setRetainInstance(true);
         }
     }
 
@@ -134,13 +145,33 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     }
 
     @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (savedInstanceState != null) {
+            // restore cars
+            Parcelable[] parcelableCars = savedInstanceState.getParcelableArray(STATE_KEY_CARS_PARCELABLE);
+            if (parcelableCars != null) {
+                for (Parcelable parcelableCar : parcelableCars) {
+                    Car car = Parcels.unwrap(parcelableCar);
+                    carList.add(car);
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        /*Car[] cars = new Car[carList.size()];
-        for (int i = 0; i < cars.length; i++) {
-            cars[i] = carList.get(i);
+        Parcelable[] carsParcelable = new Parcelable[carList.size()];
+        for (int i = 0; i < carsParcelable.length; i++) {
+            carsParcelable[i] = Parcels.wrap(carList.get(i));
         }
-        outState.putParcelableArray(STATE_CARS_PARCELABLE, cars);*/
+        outState.putParcelableArray(STATE_KEY_CARS_PARCELABLE, carsParcelable);
     }
 
     private void listenBnv() {
@@ -188,8 +219,8 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
             double longitude = car.getLocation().getLongitude();
             String carTitle = car.getModel().getTitle();
             LatLng latLng = new LatLng(latitude, longitude);
-            Marker carMarker = mMap.addMarker(MapUtils.generateMarker(this, latLng, carTitle,
-                    colorPrimaryDark, R.style.carMarkerIconText));
+            Marker carMarker = mMap.addMarker(MapUtils.generateMarker(this, latLng,
+                    R.drawable.ic_car_24dp));
             carMarkerList.add(carMarker);
         }
         LatLngBounds latLngBounds = MapUtils.getMarkerBounds(carMarkerList);
@@ -205,15 +236,6 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
         // remove idle listener after seconds
         final Handler handler = new Handler();
         handler.postDelayed(() -> mMap.setOnCameraIdleListener(null), seconds * 1000);
-    }
-
-    private boolean internetExists() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm != null) {
-            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-            return activeNetwork.isConnectedOrConnecting();
-        }
-        return false;
     }
 
     private void setDebugConfig() {
@@ -237,6 +259,15 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
         return true;
     }
 
+    private boolean internetExists() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            return activeNetwork.isConnectedOrConnecting();
+        }
+        return false;
+    }
+
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -249,6 +280,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.style_map_aubergine));
 
         // Add car markers and zoom to them
         if (internetExists()) {
@@ -279,8 +311,8 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
                     .subscribe(address -> {
                         // Add a marker of user location & zoom to it
                         mUserLatLng = new LatLng(address.getLatitude(), address.getLongitude());
-                        mMap.addMarker(MapUtils.generateMarker(this, mUserLatLng, "You",
-                                colorAccent, R.style.userMarkerIconText));
+                        mMap.addMarker(MapUtils.generateMarker(this, mUserLatLng,
+                                R.drawable.ic_android_24dp));
                         zoomToUserSeconds(3);
                     });
             disps.add(locationDisp);

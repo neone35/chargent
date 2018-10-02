@@ -6,7 +6,7 @@
     android:name="com.github.neone35.chargent.CarListFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CarListFragment"
+    tools:context=".list.CarListFragment"
     android:layout_marginTop="8dp"
     android:layout_marginRight="8dp"
     tools:listitem="@layout/fragment_car_item"

@@ -1,4 +1,4 @@
-package com.github.neone35.chargent;
+package com.github.neone35.chargent.list;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -14,8 +14,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.github.neone35.chargent.R;
 import com.github.neone35.chargent.model.Car;
-import com.orhanobut.logger.Logger;
 
 import org.parceler.Parcels;
 
@@ -40,7 +40,7 @@ public class CarListFragment extends Fragment {
         super.onAttach(context);
     }
 
-    static CarListFragment newInstance(int columnCount, ArrayList<Car> carList) {
+    public static CarListFragment newInstance(int columnCount, ArrayList<Car> carList) {
         CarListFragment fragment = new CarListFragment();
         Bundle args = new Bundle();
         args.putInt(ARG_COLUMN_COUNT, columnCount);

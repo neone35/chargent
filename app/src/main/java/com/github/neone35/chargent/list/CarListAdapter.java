@@ -1,4 +1,4 @@
-package com.github.neone35.chargent;
+package com.github.neone35.chargent.list;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.github.neone35.chargent.R;
 import com.github.neone35.chargent.model.Car;
 import com.orhanobut.logger.Logger;
 
@@ -17,8 +18,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
-
-import static com.bumptech.glide.request.RequestOptions.fitCenterTransform;
 
 public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHolder> {
 
