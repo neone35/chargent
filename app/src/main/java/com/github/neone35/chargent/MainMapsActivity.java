@@ -17,16 +17,15 @@ import rx.subscriptions.CompositeSubscription;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuInflater;
 
 import com.blankj.utilcode.util.ToastUtils;
-import com.bumptech.glide.Glide;
 import com.facebook.stetho.Stetho;
 import com.github.neone35.chargent.model.Car;
 import com.google.android.gms.location.LocationRequest;
@@ -35,16 +34,10 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.resources.TextAppearance;
-import com.google.android.material.resources.TextAppearanceConfig;
-import com.google.maps.android.ui.IconGenerator;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.Logger;
 import com.patloew.rxlocation.RxLocation;
@@ -62,6 +55,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     private CarVM carVM;
     private RxLocation rxLocation;
     private RxPermissions rxPermissions;
+    private LatLng userLatLng;
 
     @BindView(R.id.bnv_main)
     BottomNavigationView bnvMain;
@@ -83,38 +77,26 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_maps);
+        rxLocation = new RxLocation(this);
+        rxPermissions = new RxPermissions(this);
         setDebugConfig();
         ButterKnife.bind(this);
         setActionBar();
-        rxLocation = new RxLocation(this);
-        rxPermissions = new RxPermissions(this);
 
         // create cars viewmodel instance
-        // interactor subscribes, viewmodel observes
+        // interactor subscribesOn, viewmodel observesOn
         carVM = new CarVM(new CarInteractorImpl(), AndroidSchedulers.mainThread());
 
-        Disposable locationDisp = rxPermissions.request(Manifest.permission.ACCESS_FINE_LOCATION)
-                .subscribe(granted -> {
-                    if (granted) {
-                        // obtain the SupportMapFragment and get notified when the map is ready to be used.
-                        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                                .findFragmentById(R.id.frag_map);
-                        if (mapFragment != null) {
-                            mapFragment.getMapAsync(this);
-                        } else {
-                            ToastUtils.showShort("Map initialization failed");
-                        }
-                    }
-                });
-        disps.add(locationDisp);
+        // obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.frag_map);
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        } else {
+            ToastUtils.showShort("Map initialization failed");
+        }
 
         listenBnv();
-
-        if (internetExists()) {
-            performCarFetch();
-        } else {
-            ToastUtils.showShort(stringNoInternet);
-        }
     }
 
     @Override
@@ -122,6 +104,16 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
         disps.clear();
         subs.clear();
         super.onDestroy();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        /*Car[] cars = new Car[carList.size()];
+        for (int i = 0; i < cars.length; i++) {
+            cars[i] = carList.get(i);
+        }
+        outState.putParcelableArray(STATE_CARS_PARCELABLE, cars);*/
     }
 
     private void listenBnv() {
@@ -142,35 +134,46 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     private void performCarFetch() {
         Observer<List<Car>> carsObserver = new Observer<List<Car>>() {
             @Override
-            public void onCompleted() {
-
-            }
+            public void onCompleted() { }
             @Override
             public void onError(Throwable e) {
                 Logger.e(e.getMessage());
             }
             @Override
             public void onNext(List<Car> cars) {
-                //Add cars markers
-                List<Marker> carMarkerList = new ArrayList<>();
-                for (int i = 0; i < cars.size(); i++) {
-                    Car car = cars.get(i);
-                    double latitude = car.getLocation().getLatitude();
-                    double longitude = car.getLocation().getLongitude();
-                    String carTitle = car.getModel().getTitle();
-                    LatLng latLng = new LatLng(latitude, longitude);
-                    Marker carMarker = mMap.addMarker(generateMarker(latLng, carTitle, colorPrimaryDark, R.style.carMarkerIconText));
-                    carMarkerList.add(carMarker);
-                }
-                LatLngBounds latLngBounds = getMarkerBounds(carMarkerList);
-                int padding = 10; // offset from edges of the map in pixels
-                CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(latLngBounds, padding);
-                mMap.animateCamera(cu);
+                populateMapWithCars(cars);
             }
         };
 
         Subscription carsSub = carVM.fetch().subscribe(carsObserver);
         subs.add(carsSub);
+    }
+
+    private void populateMapWithCars (List<Car> cars) {
+        List<Marker> carMarkerList = new ArrayList<>();
+        for (int i = 0; i < cars.size(); i++) {
+            Car car = cars.get(i);
+            double latitude = car.getLocation().getLatitude();
+            double longitude = car.getLocation().getLongitude();
+            String carTitle = car.getModel().getTitle();
+            LatLng latLng = new LatLng(latitude, longitude);
+            Marker carMarker = mMap.addMarker(MapUtils.generateMarker(this, latLng, carTitle,
+                    colorPrimaryDark, R.style.carMarkerIconText));
+            carMarkerList.add(carMarker);
+        }
+        LatLngBounds latLngBounds = MapUtils.getMarkerBounds(carMarkerList);
+        int padding = 10; // offset from edges of the map in pixels
+        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(latLngBounds, padding);
+        // zoom to found cars bounds
+        mMap.animateCamera(cu);
+    }
+
+    private void zoomToUserSeconds(int seconds) {
+        // zoom to user location when idle
+        mMap.setOnCameraIdleListener(() -> mMap.animateCamera(CameraUpdateFactory.newLatLng(userLatLng)));
+        // remove idle listener after seconds
+        final Handler handler = new Handler();
+        handler.postDelayed(() -> mMap.setOnCameraIdleListener(null), seconds * 1000);
     }
 
     private boolean internetExists() {
@@ -185,6 +188,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     private void setDebugConfig() {
         Stetho.initializeWithDefaults(this);
         Logger.addLogAdapter(new AndroidLogAdapter());
+        rxPermissions.setLogging(true);
     }
 
     private void setActionBar() {
@@ -205,8 +209,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
+     * This is where we can add markers or lines, add listeners or move the camera.
      * If Google Play services is not installed on the device, the user will be prompted to install
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
@@ -216,40 +219,40 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        // Add car markers and zoom to them
+        if (internetExists()) {
+            performCarFetch();
+        } else {
+            ToastUtils.showShort(stringNoInternet);
+        }
+
+        Disposable permissionDisp = rxPermissions.request(Manifest.permission.ACCESS_FINE_LOCATION)
+                .subscribe(granted -> {
+                    if (granted) {
+                        addUserMarker();
+                    } else {
+                        ToastUtils.showShort("Could not find your location");
+                    }
+                });
+        disps.add(permissionDisp);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void addUserMarker() {
         LocationRequest locationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            Disposable locDisp = rxLocation.location().updates(locationRequest)
+            Disposable locationDisp = rxLocation.location().updates(locationRequest)
                     .flatMap(location -> rxLocation.geocoding().fromLocation(location).toObservable())
                     .subscribe(address -> {
-                        // Add a marker of user location and zoom to it
-                        LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-                        mMap.addMarker(generateMarker(latLng, "You", colorAccent, R.style.userMarkerIconText));
-                        mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+                        // Add a marker of user location & zoom to it
+                        userLatLng = new LatLng(address.getLatitude(), address.getLongitude());
+                        mMap.addMarker(MapUtils.generateMarker(this, userLatLng, "You",
+                                colorAccent, R.style.userMarkerIconText));
+                        zoomToUserSeconds(3);
                     });
-            disps.add(locDisp);
+            disps.add(locationDisp);
         }
-    }
-
-    private MarkerOptions generateMarker(LatLng latLng, String markerTitle, int bgColor, int textStyle) {
-        // Build an icon with place name
-        IconGenerator iconGenerator = new IconGenerator(MainMapsActivity.this);
-        iconGenerator.setColor(bgColor);
-        iconGenerator.setTextAppearance(textStyle);
-        Bitmap bitmap = iconGenerator.makeIcon(markerTitle);
-        BitmapDescriptor icon = BitmapDescriptorFactory.fromBitmap(bitmap);
-        // Build a marker
-        return new MarkerOptions()
-                .position(latLng)
-                .icon(icon);
-    }
-
-    private LatLngBounds getMarkerBounds(List<Marker> markerList) {
-        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        for (Marker marker : markerList) {
-            builder.include(marker.getPosition());
-        }
-        return builder.build();
     }
 }
