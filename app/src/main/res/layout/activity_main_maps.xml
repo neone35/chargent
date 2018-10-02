@@ -9,15 +9,15 @@
     android:layout_height="match_parent"
     tools:context=".MainMapsActivity">
 
-    <fragment
-        android:id="@+id/frag_map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
+    <FrameLayout
+        android:id="@+id/frag_main"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         map:layout_constraintBottom_toTopOf="@+id/bnv_main"
         map:layout_constraintEnd_toEndOf="parent"
         map:layout_constraintStart_toStartOf="parent"
-        map:layout_constraintTop_toTopOf="parent" />
+        map:layout_constraintTop_toTopOf="parent"
+        />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bnv_main"

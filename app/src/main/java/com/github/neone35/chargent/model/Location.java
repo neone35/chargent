@@ -3,20 +3,33 @@ package com.github.neone35.chargent.model;
 import javax.annotation.Generated;
 import com.google.gson.annotations.SerializedName;
 
+import org.parceler.Parcel;
+
+@Parcel
 @Generated("com.robohorse.robopojogenerator")
 public class Location{
 
 	@SerializedName("address")
-	private String address;
+	String address;
 
 	@SerializedName("latitude")
-	private double latitude;
+	double latitude;
 
 	@SerializedName("id")
-	private int id;
+	int id;
 
 	@SerializedName("longitude")
-	private double longitude;
+	double longitude;
+
+    // empty constructor needed by the Parceler library
+    public Location() { }
+
+    public Location(String address, double latitude, int id, double longitude) {
+        this.address = address;
+        this.latitude = latitude;
+        this.id = id;
+        this.longitude = longitude;
+    }
 
 	public void setAddress(String address){
 		this.address = address;

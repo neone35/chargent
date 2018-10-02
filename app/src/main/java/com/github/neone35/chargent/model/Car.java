@@ -3,29 +3,46 @@ package com.github.neone35.chargent.model;
 import javax.annotation.Generated;
 import com.google.gson.annotations.SerializedName;
 
+import org.parceler.Parcel;
+
+@Parcel
 @Generated("com.robohorse.robopojogenerator")
 public class Car {
 
 	@SerializedName("batteryEstimatedDistance")
-	private int batteryEstimatedDistance;
+	int batteryEstimatedDistance;
 
 	@SerializedName("location")
-	private Location location;
+	Location location;
 
 	@SerializedName("model")
-	private Model model;
+	Model model;
 
 	@SerializedName("batteryPercentage")
-	private int batteryPercentage;
+	int batteryPercentage;
 
 	@SerializedName("isCharging")
-	private boolean isCharging;
+	boolean isCharging;
 
 	@SerializedName("id")
-	private int id;
+	int id;
 
 	@SerializedName("plateNumber")
-	private String plateNumber;
+	String plateNumber;
+
+    // empty constructor needed by the Parceler library
+	public Car() { }
+
+    public Car(int batteryEstimatedDistance, Location location, Model model, int batteryPercentage,
+               boolean isCharging, int id, String plateNumber) {
+        this.batteryEstimatedDistance = batteryEstimatedDistance;
+        this.location = location;
+        this.model = model;
+        this.batteryPercentage = batteryPercentage;
+        this.isCharging = isCharging;
+        this.id = id;
+        this.plateNumber = plateNumber;
+    }
 
 	public void setBatteryEstimatedDistance(int batteryEstimatedDistance){
 		this.batteryEstimatedDistance = batteryEstimatedDistance;

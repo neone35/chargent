@@ -3,17 +3,29 @@ package com.github.neone35.chargent.model;
 import javax.annotation.Generated;
 import com.google.gson.annotations.SerializedName;
 
+import org.parceler.Parcel;
+
+@Parcel
 @Generated("com.robohorse.robopojogenerator")
 public class Model{
 
 	@SerializedName("photoUrl")
-	private String photoUrl;
+	String photoUrl;
 
 	@SerializedName("id")
-	private int id;
+	int id;
 
 	@SerializedName("title")
-	private String title;
+	String title;
+
+	// empty constructor needed by the Parceler library
+	public Model() { }
+
+	public Model(String photoUrl, int id, String title) {
+		this.photoUrl = photoUrl;
+		this.id = id;
+		this.title = title;
+	}
 
 	public void setPhotoUrl(String photoUrl){
 		this.photoUrl = photoUrl;

@@ -26,6 +26,8 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "androidx.appcompat:appcompat:$rootProject.x_v"
     implementation "androidx.annotation:annotation:$rootProject.x_v"
+    implementation "androidx.legacy:legacy-support-v4:$rootProject.x_v"
+    implementation "androidx.recyclerview:recyclerview:$rootProject.x_v"
     implementation "com.google.android.material:material:$rootProject.x_v"
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha2'
     implementation 'com.google.android.gms:play-services-maps:15.0.1'
@@ -43,7 +45,8 @@ dependencies {
     implementation 'com.patloew.rxlocation:rxlocation:1.0.5' // location
     // network
     implementation "com.squareup.retrofit2:retrofit:$rootProject.retrofit_v" // network calls
-    implementation "com.squareup.retrofit2:converter-gson:$rootProject.retrofit_v" // gson & retrofit
+    implementation "com.squareup.retrofit2:converter-gson:$rootProject.retrofit_v"
+    // gson & retrofit
     implementation "com.squareup.retrofit2:adapter-rxjava:$rootProject.retrofit_v" // rx & retrofit
     implementation 'com.google.code.gson:gson:2.8.5' // parsing
     implementation "com.facebook.stetho:stetho:$rootProject.stetho_v" // debugging in chrome
@@ -57,6 +60,9 @@ dependencies {
     // logging
     implementation 'com.orhanobut:logger:2.2.0' // pretty logger
     implementation 'com.blankj:utilcode:1.17.3' // helper methods
+    // parcelable
+    implementation 'org.parceler:parceler-api:1.1.11'
+    annotationProcessor 'org.parceler:parceler:1.1.11'
 
     // TEST
     testImplementation 'junit:junit:4.12'

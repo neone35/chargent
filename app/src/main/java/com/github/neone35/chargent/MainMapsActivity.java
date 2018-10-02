@@ -1,19 +1,5 @@
 package com.github.neone35.chargent;
 
-import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.ActionBar;
-import butterknife.BindColor;
-import butterknife.BindString;
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
-import rx.Observer;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.subscriptions.CompositeSubscription;
-
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -46,6 +32,21 @@ import com.tbruyelle.rxpermissions2.RxPermissions;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import butterknife.BindColor;
+import butterknife.BindString;
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import rx.Observer;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.subscriptions.CompositeSubscription;
+
 public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
@@ -55,7 +56,11 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     private CarVM carVM;
     private RxLocation rxLocation;
     private RxPermissions rxPermissions;
-    private LatLng userLatLng;
+    private LatLng mUserLatLng;
+    private FragmentManager mFragmentManager;
+    private SupportMapFragment mMapFragment;
+    private CarListFragment mListFragment;
+    private ArrayList<Car> carList = new ArrayList<>();
 
     @BindView(R.id.bnv_main)
     BottomNavigationView bnvMain;
@@ -79,24 +84,45 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
         setContentView(R.layout.activity_main_maps);
         rxLocation = new RxLocation(this);
         rxPermissions = new RxPermissions(this);
-        setDebugConfig();
+        mFragmentManager = getSupportFragmentManager();
         ButterKnife.bind(this);
+        setDebugConfig();
         setActionBar();
 
         // create cars viewmodel instance
         // interactor subscribesOn, viewmodel observesOn
         carVM = new CarVM(new CarInteractorImpl(), AndroidSchedulers.mainThread());
 
-        // obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.frag_map);
-        if (mapFragment != null) {
-            mapFragment.getMapAsync(this);
-        } else {
-            ToastUtils.showShort("Map initialization failed");
+        // only create fragment if there was no configuration change
+        if (savedInstanceState == null) {
+            // obtain the SupportMapFragment
+            mMapFragment = new SupportMapFragment();
+            inflateMapFragment();
         }
 
         listenBnv();
+    }
+
+    private void inflateMapFragment() {
+        if (!mFragmentManager.getFragments().contains(mMapFragment)) {
+            mFragmentManager.beginTransaction()
+                    .replace(R.id.frag_main, mMapFragment)
+                    .commit();
+            // get notified when the map is ready to be used.
+            mMapFragment.getMapAsync(this);
+        }
+    }
+
+    private void inflateListFragment() {
+        if (!mFragmentManager.getFragments().contains(mListFragment)
+                && !carList.isEmpty()) {
+            mListFragment = CarListFragment.newInstance(1, carList);
+            mFragmentManager.beginTransaction()
+                    .replace(R.id.frag_main, mListFragment)
+                    .commit();
+        } else {
+            ToastUtils.showShort("No cars to add into list");
+        }
     }
 
     @Override
@@ -121,10 +147,10 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
             int selectedItemId = menuItem.getItemId();
             switch (selectedItemId) {
                 case R.id.bnv_action_map:
-                    Logger.d("Map selected!");
+                    inflateMapFragment();
                     break;
                 case R.id.bnv_action_list:
-                    Logger.d("List selected!");
+                    inflateListFragment();
                     break;
             }
             return true;
@@ -134,14 +160,18 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     private void performCarFetch() {
         Observer<List<Car>> carsObserver = new Observer<List<Car>>() {
             @Override
-            public void onCompleted() { }
+            public void onCompleted() {
+            }
+
             @Override
             public void onError(Throwable e) {
                 Logger.e(e.getMessage());
             }
+
             @Override
             public void onNext(List<Car> cars) {
                 populateMapWithCars(cars);
+                carList.addAll(cars);
             }
         };
 
@@ -149,7 +179,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
         subs.add(carsSub);
     }
 
-    private void populateMapWithCars (List<Car> cars) {
+    private void populateMapWithCars(List<Car> cars) {
         List<Marker> carMarkerList = new ArrayList<>();
         for (int i = 0; i < cars.size(); i++) {
             Car car = cars.get(i);
@@ -170,7 +200,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
 
     private void zoomToUserSeconds(int seconds) {
         // zoom to user location when idle
-        mMap.setOnCameraIdleListener(() -> mMap.animateCamera(CameraUpdateFactory.newLatLng(userLatLng)));
+        mMap.setOnCameraIdleListener(() -> mMap.animateCamera(CameraUpdateFactory.newLatLng(mUserLatLng)));
         // remove idle listener after seconds
         final Handler handler = new Handler();
         handler.postDelayed(() -> mMap.setOnCameraIdleListener(null), seconds * 1000);
@@ -247,8 +277,8 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
                     .flatMap(location -> rxLocation.geocoding().fromLocation(location).toObservable())
                     .subscribe(address -> {
                         // Add a marker of user location & zoom to it
-                        userLatLng = new LatLng(address.getLatitude(), address.getLongitude());
-                        mMap.addMarker(MapUtils.generateMarker(this, userLatLng, "You",
+                        mUserLatLng = new LatLng(address.getLatitude(), address.getLongitude());
+                        mMap.addMarker(MapUtils.generateMarker(this, mUserLatLng, "You",
                                 colorAccent, R.style.userMarkerIconText));
                         zoomToUserSeconds(3);
                     });
