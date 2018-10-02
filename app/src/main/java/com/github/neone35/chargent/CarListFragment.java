@@ -35,6 +35,11 @@ public class CarListFragment extends Fragment {
     public CarListFragment() {
     }
 
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+    }
+
     static CarListFragment newInstance(int columnCount, ArrayList<Car> carList) {
         CarListFragment fragment = new CarListFragment();
         Bundle args = new Bundle();
@@ -79,7 +84,7 @@ public class CarListFragment extends Fragment {
             } else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new CarListAdapter(carList));
+            recyclerView.setAdapter(new CarListAdapter(carList, this.getActivity()));
         }
         return view;
     }

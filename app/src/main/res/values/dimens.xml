@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="text_margin">16dp</dimen>
+    <dimen name="grids_margin">8dp</dimen>
+    <dimen name="card_corner_radius">4dp</dimen>
+    <dimen name="list_item_title_text_size">18sp</dimen>
+    <dimen name="list_item_subtitle_text_size">16sp</dimen>
+    <dimen name="list_item_big_title_size">24sp</dimen>
+    <dimen name="list_item_big_subtitle_size">20sp</dimen>
 </resources>

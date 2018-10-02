@@ -1,25 +1,33 @@
 package com.github.neone35.chargent;
 
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.bumptech.glide.Glide;
+import com.github.neone35.chargent.model.Car;
+import com.orhanobut.logger.Logger;
+
+import java.util.List;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-
-import com.github.neone35.chargent.model.Car;
-
-import java.util.List;
+import static com.bumptech.glide.request.RequestOptions.fitCenterTransform;
 
 public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHolder> {
 
     private final List<Car> mCars;
+    private Context mCtx;
 
-    CarListAdapter(List<Car> cars) {
+    CarListAdapter(List<Car> cars, Context ctx) {
         mCars = cars;
+        mCtx = ctx;
     }
 
     @NonNull
@@ -32,9 +40,28 @@ public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder holder, int position) {
-        holder.mCar = mCars.get(position);
-        holder.mIdView.setText(String.valueOf(mCars.get(position).getId()));
-        holder.mContentView.setText(mCars.get(position).getModel().getTitle());
+        Car car = holder.mCar = mCars.get(position);
+
+        // load car image
+        String imgUrl = car.getModel().getPhotoUrl();
+        try {
+            Glide.with(holder.ivCarPhoto)
+                    .load(imgUrl)
+                    .into(holder.ivCarPhoto);
+        } catch (Exception e) {
+            Logger.e(e.getMessage());
+        }
+        // load other view data
+        holder.tvCarTitle.setText(car.getModel().getTitle());
+        holder.tvCarPlate.setText(car.getPlateNumber());
+        holder.tvCarAddress.setText(car.getLocation().getAddress());
+        holder.tvBatteryCharge.setText(String.format("%s%%", String.valueOf(car.getBatteryPercentage())));
+        holder.tvBatteryDistance.setText(String.format("%skm", String.valueOf(car.getBatteryEstimatedDistance())));
+        if (car.isIsCharging())
+            holder.tvCharging.setText(mCtx.getResources().getString(R.string.yes));
+        else
+            holder.tvCharging.setText(mCtx.getResources().getString(R.string.no));
+
     }
 
     @Override
@@ -42,24 +69,29 @@ public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHold
         return mCars.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends RecyclerView.ViewHolder {
         final View mView;
-        @BindView(R.id.item_number)
-        TextView mIdView;
-        @BindView(R.id.content)
-        TextView mContentView;
+        @BindView(R.id.iv_car_photo)
+        ImageView ivCarPhoto;
+        @BindView(R.id.tv_car_title)
+        TextView tvCarTitle;
+        @BindView(R.id.tv_car_plate)
+        TextView tvCarPlate;
+        @BindView(R.id.tv_car_address)
+        TextView tvCarAddress;
+        @BindView(R.id.tv_battery_charge)
+        TextView tvBatteryCharge;
+        @BindView(R.id.tv_battery_distance)
+        TextView tvBatteryDistance;
+        @BindView(R.id.tv_charging)
+        TextView tvCharging;
+
         Car mCar;
 
         ViewHolder(View view) {
             super(view);
             mView = view;
             ButterKnife.bind(this, view);
-        }
-
-        @NonNull
-        @Override
-        public String toString() {
-            return super.toString() + " '" + mContentView.getText() + "'";
         }
     }
 }

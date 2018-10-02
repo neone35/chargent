@@ -9,6 +9,8 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables.useSupportLibrary = true
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -28,6 +30,9 @@ dependencies {
     implementation "androidx.annotation:annotation:$rootProject.x_v"
     implementation "androidx.legacy:legacy-support-v4:$rootProject.x_v"
     implementation "androidx.recyclerview:recyclerview:$rootProject.x_v"
+    implementation "androidx.vectordrawable:vectordrawable:$rootProject.x_v"
+    implementation "androidx.cardview:cardview:$rootProject.x_v"
+    implementation 'androidx.multidex:multidex:2.0.0'
     implementation "com.google.android.material:material:$rootProject.x_v"
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha2'
     implementation 'com.google.android.gms:play-services-maps:15.0.1'

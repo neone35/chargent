@@ -66,11 +66,11 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     BottomNavigationView bnvMain;
 
     @BindString(R.string.app_name)
-    String stringAppName;
+    String appName;
     @BindString(R.string.nav_map_label)
-    String stringMapsTitle;
+    String mapTitle;
     @BindString(R.string.nav_list_label)
-    String stringListTitle;
+    String listTitle;
     @BindString(R.string.no_internet)
     String stringNoInternet;
     @BindColor(R.color.colorPrimaryDark)
@@ -87,7 +87,6 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
         mFragmentManager = getSupportFragmentManager();
         ButterKnife.bind(this);
         setDebugConfig();
-        setActionBar();
 
         // create cars viewmodel instance
         // interactor subscribesOn, viewmodel observesOn
@@ -104,6 +103,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     }
 
     private void inflateMapFragment() {
+        setActionBar(appName, mapTitle);
         if (!mFragmentManager.getFragments().contains(mMapFragment)) {
             mFragmentManager.beginTransaction()
                     .replace(R.id.frag_main, mMapFragment)
@@ -114,6 +114,7 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
     }
 
     private void inflateListFragment() {
+        setActionBar(appName, listTitle);
         if (!mFragmentManager.getFragments().contains(mListFragment)
                 && !carList.isEmpty()) {
             mListFragment = CarListFragment.newInstance(1, carList);
@@ -221,11 +222,11 @@ public class MainMapsActivity extends AppCompatActivity implements OnMapReadyCal
         rxPermissions.setLogging(true);
     }
 
-    private void setActionBar() {
+    private void setActionBar(String title, String subTitle) {
         ActionBar ab = getSupportActionBar();
         if (ab != null) {
-            ab.setTitle(stringAppName);
-            ab.setSubtitle(stringMapsTitle);
+            ab.setTitle(title);
+            ab.setSubtitle(subTitle);
         }
     }
 

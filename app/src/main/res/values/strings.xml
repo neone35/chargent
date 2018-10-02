@@ -8,4 +8,13 @@
     <string name="menu_appbar_filter_battery_label">by remaining battery</string>
     <string name="menu_appbar_sort_distance_label">by distance</string>
     <string name="no_internet">No internet connection</string>
+    <string name="no_title">No title</string>
+    <string name="no_plate">No plate</string>
+    <string name="no_address">No address</string>
+    <string name="photo_of_the_car">photo of the car</string>
+    <string name="battery_percentage">battery percentage</string>
+    <string name="battery_distance">battery distance</string>
+    <string name="is_battery_charging">is battery charging</string>
+    <string name="yes">yes</string>
+    <string name="no">no</string>
 </resources>
