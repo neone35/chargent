@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.github.neone35.chargent.R;
+import com.github.neone35.chargent.map.MainMapActivity;
 import com.github.neone35.chargent.model.Car;
 import com.orhanobut.logger.Logger;
 
@@ -18,6 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.reactivex.disposables.Disposable;
 
 public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHolder> {
 
@@ -34,6 +36,7 @@ public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHold
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.fragment_car_item, parent, false);
+
         return new ViewHolder(view);
     }
 

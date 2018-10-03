@@ -4,8 +4,9 @@ import com.github.neone35.chargent.model.Car;
 
 import java.util.List;
 
-import rx.Observable;
-import rx.Scheduler;
+import io.reactivex.Observable;
+import io.reactivex.Scheduler;
+import io.reactivex.Single;
 
 public class CarVM {
 
@@ -20,7 +21,7 @@ public class CarVM {
     }
 
     // subscribed to & observed by activity/fragment
-    public Observable<List<Car>> fetch() {
+    public Single<List<Car>> fetch() {
         // make sure observation is done on right thread (main)
         return carInteractor.fetch().observeOn(scheduler);
     }

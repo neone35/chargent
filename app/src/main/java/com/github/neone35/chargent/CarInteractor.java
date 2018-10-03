@@ -4,9 +4,9 @@ import com.github.neone35.chargent.model.Car;
 
 import java.util.List;
 
-import rx.Observable;
+import io.reactivex.Single;
 
 public interface CarInteractor {
 
-    Observable<List<Car>> fetch();
+    Single<List<Car>> fetch();
 }

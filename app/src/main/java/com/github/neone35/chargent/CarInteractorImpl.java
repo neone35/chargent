@@ -5,12 +5,12 @@ import com.github.neone35.chargent.model.Car;
 
 import java.util.List;
 
+import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
-import rx.Observable;
-import rx.schedulers.Schedulers;
 
 public class CarInteractorImpl implements CarInteractor {
 
@@ -26,7 +26,7 @@ public class CarInteractorImpl implements CarInteractor {
                 // use Gson
                 .addConverterFactory(GsonConverterFactory.create())
                 // use RX
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .client(okClient)
                 .build();
         carService = retrofit.create(CarService.class);
@@ -34,7 +34,7 @@ public class CarInteractorImpl implements CarInteractor {
 
 
     @Override
-    public Observable<List<Car>> fetch() {
+    public Single<List<Car>> fetch() {
         // subscribe to receive next events
         // perform network call on separate (IO) thread
         return carService.getAvailableCars().subscribeOn(Schedulers.io());
