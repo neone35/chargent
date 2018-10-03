@@ -10,12 +10,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import com.blankj.utilcode.util.ToastUtils;
 import com.facebook.stetho.Stetho;
 import com.github.neone35.chargent.CarInteractorImpl;
 import com.github.neone35.chargent.CarVM;
 import com.github.neone35.chargent.R;
+import com.github.neone35.chargent.list.CarListAdapter;
 import com.github.neone35.chargent.list.CarListFragment;
 import com.github.neone35.chargent.model.Car;
 import com.google.android.gms.location.LocationRequest;
@@ -119,7 +121,7 @@ public class MainMapActivity extends AppCompatActivity implements OnMapReadyCall
     private void inflateListFragment() {
         setActionBar(appName, listTitle);
         if (!mFragmentManager.getFragments().contains(mListFragment)) {
-            mListFragment = CarListFragment.newInstance(1);
+            mListFragment = CarListFragment.newInstance(1, mUserLatLng);
             mFragmentManager.beginTransaction()
                     .replace(R.id.frag_main, mListFragment)
                     .commit();
@@ -217,6 +219,22 @@ public class MainMapActivity extends AppCompatActivity implements OnMapReadyCall
         inflater.inflate(R.menu.menu_appbar, menu);
         return true;
     }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.getItem(1).setEnabled(false);
+        return true;
+    }
+
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        switch (item.getItemId()) {
+//            case R.id.menu_appbar_sort_distance:
+//                Logger.d("Sort menu item selected!");
+//                return true;
+//        }
+//        return super.onOptionsItemSelected(item);
+//    }
 
     private boolean internetExists() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
