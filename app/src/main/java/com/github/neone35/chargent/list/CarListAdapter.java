@@ -9,17 +9,16 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.github.neone35.chargent.R;
-import com.github.neone35.chargent.map.MainMapActivity;
 import com.github.neone35.chargent.model.Car;
 import com.orhanobut.logger.Logger;
 
 import java.util.List;
+import java.util.Locale;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.reactivex.disposables.Disposable;
 
 public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHolder> {
 
@@ -57,13 +56,19 @@ public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHold
         holder.tvCarTitle.setText(car.getModel().getTitle());
         holder.tvCarPlate.setText(car.getPlateNumber());
         holder.tvCarAddress.setText(car.getLocation().getAddress());
-        holder.tvBatteryCharge.setText(String.format("%s%%", String.valueOf(car.getBatteryPercentage())));
-        holder.tvBatteryDistance.setText(String.format("%skm", String.valueOf(car.getBatteryEstimatedDistance())));
-        if (car.isIsCharging())
+        String addS = mCtx.getResources().getString(R.string.add_percent);
+        holder.tvBatteryCharge.setText(String.format(addS, String.valueOf(car.getBatteryPercentage())));
+        String addKm = mCtx.getResources().getString(R.string.add_km);
+        holder.tvBatteryDistance.setText(String.format(addKm, String.valueOf(car.getBatteryEstimatedDistance())));
+        holder.tvUserDistance.setText(String.format(addKm,
+                String.format(Locale.getDefault(),
+                        "%.1f", car.getDistanceFromUser() / 1000)));
+        if (car.isIsCharging()) {
             holder.tvCharging.setText(mCtx.getResources().getString(R.string.yes));
-        else
+        }
+        else {
             holder.tvCharging.setText(mCtx.getResources().getString(R.string.no));
-
+        }
     }
 
     @Override
@@ -83,10 +88,12 @@ public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHold
         TextView tvCarAddress;
         @BindView(R.id.tv_battery_charge)
         TextView tvBatteryCharge;
-        @BindView(R.id.tv_battery_distance)
+        @BindView(R.id.tv_drive_distance)
         TextView tvBatteryDistance;
         @BindView(R.id.tv_charging)
         TextView tvCharging;
+        @BindView(R.id.tv_user_distance)
+        TextView tvUserDistance;
 
         Car mCar;
 

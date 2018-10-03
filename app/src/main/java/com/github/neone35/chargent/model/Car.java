@@ -30,6 +30,8 @@ public class Car {
 	@SerializedName("plateNumber")
 	String plateNumber;
 
+	float distanceFromUser;
+
     // empty constructor needed by the Parceler library
 	public Car() { }
 
@@ -113,4 +115,20 @@ public class Car {
 			",plateNumber = '" + plateNumber + '\'' + 
 			"}";
 		}
+
+    public boolean isCharging() {
+        return isCharging;
+    }
+
+    public void setCharging(boolean charging) {
+        isCharging = charging;
+    }
+
+    public float getDistanceFromUser() {
+        return distanceFromUser;
+    }
+
+    public void setDistanceFromUser(float distanceFromUser) {
+        this.distanceFromUser = distanceFromUser;
+    }
 }

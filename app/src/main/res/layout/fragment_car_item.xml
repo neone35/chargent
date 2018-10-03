@@ -5,12 +5,12 @@
     android:id="@+id/scan_detail_cardview"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="@dimen/grids_margin"
     android:layout_marginStart="@dimen/grids_margin"
+    android:layout_marginLeft="@dimen/grids_margin"
+    android:layout_marginBottom="@dimen/grids_margin"
     android:clickable="true"
     android:focusable="true"
-    app:cardCornerRadius="@dimen/card_corner_radius"
-    android:layout_marginLeft="@dimen/grids_margin">
+    app:cardCornerRadius="@dimen/card_corner_radius">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -118,8 +118,6 @@
                 android:id="@+id/iv_battery_charge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginLeft="8dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:background="@drawable/ic_battery_unknown_24dp"
@@ -136,8 +134,8 @@
                 style="@style/Base.TextAppearance.AppCompat.SearchResult.Subtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginLeft="8dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginLeft="4dp"
                 android:textColor="@color/colorWhite"
                 android:textSize="@dimen/list_item_subtitle_text_size"
                 app:layout_constraintBottom_toBottomOf="@+id/iv_battery_charge"
@@ -152,81 +150,118 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                app:layout_constraintGuide_percent="0.33" />
+                app:layout_constraintGuide_percent="0.25" />
 
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideline2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                app:layout_constraintGuide_percent="0.66" />
+                app:layout_constraintGuide_percent="0.50" />
 
-            <ImageView
-                android:id="@+id/iv_battery_distance"
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guideline3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginLeft="8dp"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.75" />
+
+            <ImageView
+                android:id="@+id/iv_drive_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:contentDescription="@string/battery_distance"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/tv_battery_distance"
+                app:layout_constraintEnd_toStartOf="@+id/tv_drive_distance"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintHorizontal_chainStyle="packed"
                 app:layout_constraintStart_toEndOf="@+id/guideline"
                 app:layout_constraintStart_toStartOf="@+id/guideline"
                 app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_distance_24dp" />
+                app:srcCompat="@drawable/ic_car_24dp" />
 
             <TextView
-                android:id="@+id/tv_battery_distance"
+                android:id="@+id/tv_drive_distance"
                 style="@style/Base.TextAppearance.AppCompat.SearchResult.Subtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginLeft="8dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginLeft="4dp"
                 android:textColor="@color/colorWhite"
-                app:layout_constraintBottom_toBottomOf="@+id/iv_battery_distance"
+                app:layout_constraintBottom_toBottomOf="@+id/iv_drive_distance"
                 app:layout_constraintEnd_toStartOf="@+id/guideline2"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/iv_battery_distance"
-                app:layout_constraintTop_toTopOf="@+id/iv_battery_distance"
+                app:layout_constraintStart_toEndOf="@+id/iv_drive_distance"
+                app:layout_constraintTop_toTopOf="@+id/iv_drive_distance"
                 tools:text="132km" />
 
             <ImageView
                 android:id="@+id/iv_charging"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginLeft="8dp"
                 android:layout_marginTop="8dp"
-                app:layout_constraintHorizontal_chainStyle="packed"
                 android:layout_marginBottom="8dp"
+                android:contentDescription="@string/is_battery_charging"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/tv_charging"
                 app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintHorizontal_chainStyle="packed"
                 app:layout_constraintStart_toEndOf="@+id/guideline2"
                 app:layout_constraintStart_toStartOf="@+id/guideline2"
                 app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_battery_24dp"
-                android:contentDescription="@string/is_battery_charging" />
+                app:srcCompat="@drawable/ic_battery_24dp" />
 
             <TextView
-                style="@style/Base.TextAppearance.AppCompat.SearchResult.Subtitle"
                 android:id="@+id/tv_charging"
+                style="@style/Base.TextAppearance.AppCompat.SearchResult.Subtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginLeft="8dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
                 android:textColor="@color/colorWhite"
-                tools:text="yes"
                 app:layout_constraintBottom_toBottomOf="@+id/iv_charging"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/guideline3"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toEndOf="@+id/iv_charging"
                 app:layout_constraintTop_toTopOf="@+id/iv_charging"
-                app:layout_constraintVertical_bias="0.6" />
+                tools:text="yes" />
+
+            <ImageView
+                android:id="@+id/iv_user_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:contentDescription="@string/distance_from_user"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/tv_user_distance"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintHorizontal_chainStyle="packed"
+                app:layout_constraintStart_toEndOf="@+id/guideline3"
+                app:layout_constraintStart_toStartOf="@+id/guideline3"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/ic_distance_24dp" />
+
+            <TextView
+                android:id="@+id/tv_user_distance"
+                style="@style/Base.TextAppearance.AppCompat.SearchResult.Subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="@color/colorWhite"
+                app:layout_constraintBottom_toBottomOf="@+id/iv_user_distance"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/iv_user_distance"
+                app:layout_constraintTop_toTopOf="@+id/iv_user_distance"
+                tools:text="2.2km" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -17,4 +17,7 @@
     <string name="is_battery_charging">is battery charging</string>
     <string name="yes">yes</string>
     <string name="no">no</string>
+    <string name="distance_from_user">distance from user</string>
+    <string name="add_km">%1$skm</string>
+    <string name="add_percent">%1$s%%</string>
 </resources>

@@ -22,7 +22,7 @@
         app:showAsAction="ifRoom">
         <menu>
             <item android:id="@+id/menu_appbar_sort_distance"
-                android:icon="@drawable/ic_distance_24dp"
+                android:icon="@drawable/ic_distance_stroke_24dp"
                 app:iconTint="@color/colorPrimaryDark"
                 android:title="@string/menu_appbar_sort_distance_label" />
         </menu>

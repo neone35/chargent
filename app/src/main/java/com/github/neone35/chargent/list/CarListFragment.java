@@ -21,12 +21,10 @@ import com.github.neone35.chargent.map.MainMapActivity;
 import com.github.neone35.chargent.model.Car;
 import android.location.Location;
 import com.google.android.gms.maps.model.LatLng;
-import com.orhanobut.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 public class CarListFragment extends Fragment {
 
@@ -36,7 +34,6 @@ public class CarListFragment extends Fragment {
     private LatLng mUserLatLng = null;
     private Disposable carListDisp;
     private boolean SORT_DISTANCE_ENABLED = false;
-    private RecyclerView mCarListRV;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -72,7 +69,7 @@ public class CarListFragment extends Fragment {
         return userLoc;
     }
 
-    private float getCarDistanceFromUser (Car car) {
+    private float calcCarDistanceFromUser(Car car) {
         double carLat = car.getLocation().getLatitude();
         double carLon = car.getLocation().getLongitude();
         Location carLoc = getLocation(new LatLng(carLat, carLon));
@@ -82,30 +79,40 @@ public class CarListFragment extends Fragment {
 
     private void sortByDistanceToUser(List<Car> unsortedCars) {
         Collections.sort(unsortedCars, (car1, car2) -> {
-            float car1DistToUser = getCarDistanceFromUser(car1);
-            float car2DistToUser = getCarDistanceFromUser(car2);
+            float car1DistToUser = car1.getDistanceFromUser();
+            float car2DistToUser = car2.getDistanceFromUser();
             if(car1DistToUser == car2DistToUser)
                 return 0;
             return car1DistToUser < car2DistToUser ? -1 : 1;
         });
     }
 
+    private void setCarsDistanceFromUser(List<Car> carList) {
+        for (int i = 0; i < carList.size(); i++) {
+            Car car = carList.get(i);
+            float carDistanceFromUser = calcCarDistanceFromUser(car);
+            car.setDistanceFromUser(carDistanceFromUser);
+        }
+    }
+
     private void setListAdapterData(View view) {
         carListDisp = MainMapActivity.mCachedCarsResponse.subscribe(cars -> {
-            ArrayList<Car> carList = new ArrayList<>(cars);
+            setCarsDistanceFromUser(cars);
             if (SORT_DISTANCE_ENABLED) {
-                sortByDistanceToUser(carList);
+                sortByDistanceToUser(cars);
+            } else {
+                Collections.shuffle(cars);
             }
             // Set the adapter
             if (view instanceof RecyclerView) {
                 Context context = view.getContext();
-                mCarListRV = (RecyclerView) view;
+                RecyclerView rv = (RecyclerView) view;
                 if (mColumnCount <= 1) {
-                    mCarListRV.setLayoutManager(new LinearLayoutManager(context));
+                    rv.setLayoutManager(new LinearLayoutManager(context));
                 } else {
-                    mCarListRV.setLayoutManager(new GridLayoutManager(context, mColumnCount));
+                    rv.setLayoutManager(new GridLayoutManager(context, mColumnCount));
                 }
-                mCarListRV.setAdapter(new CarListAdapter(carList, this.getActivity()));
+                rv.setAdapter(new CarListAdapter(cars, this.getActivity()));
             }
         });
     }
@@ -134,7 +141,13 @@ public class CarListFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_appbar_sort_distance:
-                SORT_DISTANCE_ENABLED = true;
+                if (!SORT_DISTANCE_ENABLED) {
+                    SORT_DISTANCE_ENABLED = true;
+                    item.setIcon(R.drawable.ic_distance_24dp);
+                } else {
+                    SORT_DISTANCE_ENABLED = false;
+                    item.setIcon(R.drawable.ic_distance_stroke_24dp);
+                }
                 carListDisp.dispose();
                 setListAdapterData(this.getView());
                 return true;
