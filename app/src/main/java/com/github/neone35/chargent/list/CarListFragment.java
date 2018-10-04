@@ -22,7 +22,6 @@ import com.github.neone35.chargent.model.Car;
 import android.location.Location;
 import com.google.android.gms.maps.model.LatLng;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,8 +31,9 @@ public class CarListFragment extends Fragment {
     private static final String ARG_USER_LAT_LNG = "user-latlng";
     private int mColumnCount = 0;
     private LatLng mUserLatLng = null;
-    private Disposable carListDisp;
+    private Disposable mCarListDisp;
     private boolean SORT_DISTANCE_ENABLED = false;
+    private Context mCtx;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -55,6 +55,7 @@ public class CarListFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        mCtx = this.getActivity();
 
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
@@ -96,14 +97,15 @@ public class CarListFragment extends Fragment {
     }
 
     private void setListAdapterData(View view) {
-        carListDisp = MainMapActivity.mCachedCarsResponse.subscribe(cars -> {
+        mCarListDisp = MainMapActivity.mCachedCarsResponse.subscribe(cars -> {
             setCarsDistanceFromUser(cars);
+            // change sort order
             if (SORT_DISTANCE_ENABLED) {
                 sortByDistanceToUser(cars);
             } else {
                 Collections.shuffle(cars);
             }
-            // Set the adapter
+            // Set the adapter on recylerView
             if (view instanceof RecyclerView) {
                 Context context = view.getContext();
                 RecyclerView rv = (RecyclerView) view;
@@ -112,7 +114,12 @@ public class CarListFragment extends Fragment {
                 } else {
                     rv.setLayoutManager(new GridLayoutManager(context, mColumnCount));
                 }
-                rv.setAdapter(new CarListAdapter(cars, this.getActivity()));
+                // set or swap adapter (if already set)
+                if (rv.getAdapter() == null) {
+                    rv.setAdapter(new CarListAdapter(cars, mCtx));
+                } else {
+                    rv.swapAdapter(new CarListAdapter(cars, mCtx), true);
+                }
             }
         });
     }
@@ -128,11 +135,12 @@ public class CarListFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        carListDisp.dispose();
+        mCarListDisp.dispose();
     }
 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
+        // turn on 'sort' option
         menu.getItem(1).setEnabled(true);
         super.onPrepareOptionsMenu(menu);
     }
@@ -148,10 +156,11 @@ public class CarListFragment extends Fragment {
                     SORT_DISTANCE_ENABLED = false;
                     item.setIcon(R.drawable.ic_distance_stroke_24dp);
                 }
-                carListDisp.dispose();
+                mCarListDisp.dispose();
                 setListAdapterData(this.getView());
                 return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
-        return super.onOptionsItemSelected(item);
     }
 }

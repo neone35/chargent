@@ -42,7 +42,9 @@ import java.util.List;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.ListFragment;
 import butterknife.BindColor;
 import butterknife.BindString;
 import butterknife.BindView;
@@ -53,20 +55,14 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import rx.subscriptions.CompositeSubscription;
 
-public class MainMapActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MainMapActivity extends AppCompatActivity {
 
-    private GoogleMap mMap;
-    // keep all disposables in one variable to easily unsubscribe
-    private CompositeDisposable disps = new CompositeDisposable();
     private CarVM carVM;
-    private RxLocation rxLocation;
-    private RxPermissions rxPermissions;
-    private LatLng mUserLatLng;
     private FragmentManager mFragmentManager;
-    private SupportMapFragment mMapFragment;
-    private CarListFragment mListFragment;
     public static Single<List<Car>> mCachedCarsResponse = null;
     private final String KEY_CURRENT_SUBTITLE = "current-subtitle";
+    private MapFragment mMapFragment;
+    private CarListFragment mListFragment;
 
     @BindView(R.id.bnv_main)
     BottomNavigationView bnvMain;
@@ -84,8 +80,6 @@ public class MainMapActivity extends AppCompatActivity implements OnMapReadyCall
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_map);
-        rxLocation = new RxLocation(this);
-        rxPermissions = new RxPermissions(this);
         mFragmentManager = getSupportFragmentManager();
         ButterKnife.bind(this);
         setDebugConfig();
@@ -94,40 +88,39 @@ public class MainMapActivity extends AppCompatActivity implements OnMapReadyCall
         // interactor subscribesOn, viewmodel observesOn
         carVM = new CarVM(new CarInteractorImpl(), AndroidSchedulers.mainThread());
         // cache fetched response
-        mCachedCarsResponse = carVM.fetch().cache();
-
-        // only create fragment if there was no configuration change
-        if (savedInstanceState == null) {
-            inflateMapFragment();
-        }
-
-        listenBnv();
-    }
-
-    private void inflateMapFragment() {
-        setActionBar(appName, mapTitle);
-        if (!mFragmentManager.getFragments().contains(mMapFragment)) {
-            // obtain the SupportMapFragment
-            mMapFragment = new SupportMapFragment();
-            mFragmentManager.beginTransaction()
-                    .replace(R.id.frag_main, mMapFragment)
-                    .commit();
-            // get notified when the map is ready to be used.
-            mMapFragment.getMapAsync(this);
-            mMapFragment.setRetainInstance(true);
-        }
-    }
-
-    private void inflateListFragment() {
-        setActionBar(appName, listTitle);
-        if (!mFragmentManager.getFragments().contains(mListFragment)) {
-            mListFragment = CarListFragment.newInstance(1, mUserLatLng);
-            mFragmentManager.beginTransaction()
-                    .replace(R.id.frag_main, mListFragment)
-                    .commit();
+        if (internetExists()) {
+            mCachedCarsResponse = carVM.fetch().cache();
+            // listen to bottom navigation clicks
+            listenBnv();
+            // only create fragment if there was no configuration change
+            if (savedInstanceState == null) {
+                mMapFragment = MapFragment.newInstance();
+                inflateFragment(mMapFragment);
+            }
         } else {
-            ToastUtils.showShort("No cars to add into list");
+            ToastUtils.showShort(stringNoInternet);
         }
+    }
+
+    private void inflateFragment(Fragment fragment) {
+        Fragment fragToInflate = new Fragment();
+        if (fragment instanceof MapFragment) {
+            fragToInflate = checkFragmentManager(fragment, mapTitle);
+            if (fragToInflate == null) return;
+        } else if (fragment instanceof CarListFragment) {
+            fragToInflate = checkFragmentManager(fragment, listTitle);
+            if (fragToInflate == null) return;
+        }
+        mFragmentManager.beginTransaction()
+                .replace(R.id.frag_main, fragToInflate)
+                .commit();
+    }
+
+    private Fragment checkFragmentManager(Fragment fragment, String subTitle) {
+        if (!mFragmentManager.getFragments().contains(fragment)) {
+            setActionBar(appName, subTitle);
+            return fragment;
+        } else { return null; }
     }
 
     @Override
@@ -135,12 +128,6 @@ public class MainMapActivity extends AppCompatActivity implements OnMapReadyCall
         super.onRestoreInstanceState(savedInstanceState);
         String savedSubtitle = savedInstanceState.getString(KEY_CURRENT_SUBTITLE);
         setActionBar(appName, savedSubtitle);
-    }
-
-    @Override
-    protected void onDestroy() {
-        disps.clear();
-        super.onDestroy();
     }
 
     @Override
@@ -164,45 +151,21 @@ public class MainMapActivity extends AppCompatActivity implements OnMapReadyCall
             int selectedItemId = menuItem.getItemId();
             switch (selectedItemId) {
                 case R.id.bnv_action_map:
-                    inflateMapFragment();
+                    mMapFragment = MapFragment.newInstance();
+                    inflateFragment(mMapFragment);
                     break;
                 case R.id.bnv_action_list:
-                    inflateListFragment();
+                    mListFragment = CarListFragment.newInstance(1, MapFragment.mUserLatLng);
+                    inflateFragment(mListFragment);
                     break;
             }
             return true;
         });
     }
 
-    private void addCarMarkers(List<Car> cars) {
-        List<Marker> carMarkerList = new ArrayList<>();
-        for (int i = 0; i < cars.size(); i++) {
-            Car car = cars.get(i);
-            double latitude = car.getLocation().getLatitude();
-            double longitude = car.getLocation().getLongitude();
-            LatLng latLng = new LatLng(latitude, longitude);
-            Marker carMarker = mMap.addMarker(MapUtils.generateMarker(this, latLng, R.drawable.ic_car_24dp));
-            carMarkerList.add(carMarker);
-        }
-        LatLngBounds latLngBounds = MapUtils.getMarkerBounds(carMarkerList);
-        int padding = 10; // offset from edges of the map in pixels
-        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(latLngBounds, padding);
-        // zoom to found cars bounds
-        mMap.animateCamera(cu);
-    }
-
-    private void zoomToUserSeconds(int seconds) {
-        // zoom to user location when idle
-        mMap.setOnCameraIdleListener(() -> mMap.animateCamera(CameraUpdateFactory.newLatLng(mUserLatLng)));
-        // remove idle listener after seconds
-        final Handler handler = new Handler();
-        handler.postDelayed(() -> mMap.setOnCameraIdleListener(null), seconds * 1000);
-    }
-
     private void setDebugConfig() {
         Stetho.initializeWithDefaults(this);
         Logger.addLogAdapter(new AndroidLogAdapter());
-        rxPermissions.setLogging(true);
     }
 
     private void setActionBar(String title, String subTitle) {
@@ -222,19 +185,24 @@ public class MainMapActivity extends AppCompatActivity implements OnMapReadyCall
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
+        // turn off 'sort' option
         menu.getItem(1).setEnabled(false);
         return true;
     }
 
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        switch (item.getItemId()) {
-//            case R.id.menu_appbar_sort_distance:
-//                Logger.d("Sort menu item selected!");
-//                return true;
-//        }
-//        return super.onOptionsItemSelected(item);
-//    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_appbar_filter_plate:
+                Logger.d("Filter menu item selected!");
+                return true;
+            case R.id.menu_appbar_filter_battery:
+                Logger.d("Sort menu item selected!");
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
 
     private boolean internetExists() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -243,57 +211,5 @@ public class MainMapActivity extends AppCompatActivity implements OnMapReadyCall
             return activeNetwork.isConnectedOrConnecting();
         }
         return false;
-    }
-
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.style_map_aubergine));
-
-        // Add car markers and zoom to them
-        if (internetExists()) {
-            Disposable carsMapDisp = mCachedCarsResponse.subscribe(this::addCarMarkers);
-            disps.add(carsMapDisp);
-        } else {
-            ToastUtils.showShort(stringNoInternet);
-        }
-
-        // display user marker after location permission granted
-        Disposable permissionDisp = rxPermissions.request(Manifest.permission.ACCESS_FINE_LOCATION)
-                .subscribe(granted -> {
-                    if (granted) {
-                        addUserMarker();
-                    } else {
-                        ToastUtils.showShort("Could not find your location");
-                    }
-                });
-        disps.add(permissionDisp);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    private void addUserMarker() {
-        LocationRequest locationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            Disposable locationDisp = rxLocation.location().updates(locationRequest)
-                    .flatMap(location -> rxLocation.geocoding().fromLocation(location).toObservable())
-                    .subscribe(address -> {
-                        // Add a marker of user location & zoom to it
-                        mUserLatLng = new LatLng(address.getLatitude(), address.getLongitude());
-                        mMap.addMarker(MapUtils.generateMarker(this, mUserLatLng, R.drawable.ic_android_24dp));
-                        zoomToUserSeconds(3);
-                    });
-            disps.add(locationDisp);
-        }
     }
 }
