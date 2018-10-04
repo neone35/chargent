@@ -7,16 +7,13 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 
-import androidx.annotation.RequiresApi;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
 import android.os.Handler;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
 import com.blankj.utilcode.util.ToastUtils;
+import com.github.neone35.chargent.MainActivity;
 import com.github.neone35.chargent.R;
 import com.github.neone35.chargent.model.Car;
 import com.google.android.gms.location.LocationRequest;
@@ -42,7 +39,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     private GoogleMap mMap;
     // keep all disposables in one variable to easily unsubscribe
     private CompositeDisposable disps = new CompositeDisposable();
-    static LatLng mUserLatLng;
+    public static LatLng mUserLatLng;
     private Context mCtx;
     private RxLocation rxLocation;
     private RxPermissions rxPermissions;
@@ -89,8 +86,10 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
                 Objects.requireNonNull(this.getActivity()), R.raw.style_map_aubergine));
 
+//        if (MainActivity.IS_BATTERY_FILTER_ENABLED)
+
         // add car markers and zoom to them
-        Disposable carsMapDisp = MainMapActivity.mCachedCarsResponse.subscribe(this::addCarMarkers);
+        Disposable carsMapDisp = MainActivity.mCachedCarsResponse.subscribe(this::addCarMarkers);
         disps.add(carsMapDisp);
 
         // add user marker after location permission granted
@@ -119,7 +118,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                             mUserLatLng = new LatLng(address.getLatitude(), address.getLongitude());
                             mMap.addMarker(
                                     MapUtils.generateMarker(mCtx, mUserLatLng, R.drawable.ic_android_24dp));
-                            zoomToUserSeconds(3);
+                            zoomToUserSeconds();
                         });
                 disps.add(locationDisp);
             }
@@ -144,11 +143,11 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         mMap.animateCamera(cu);
     }
 
-    private void zoomToUserSeconds(int seconds) {
+    private void zoomToUserSeconds() {
         // zoom to user location when idle
         mMap.setOnCameraIdleListener(() -> mMap.animateCamera(CameraUpdateFactory.newLatLng(mUserLatLng)));
         // remove idle listener after seconds
         final Handler handler = new Handler();
-        handler.postDelayed(() -> mMap.setOnCameraIdleListener(null), seconds * 1000);
+        handler.postDelayed(() -> mMap.setOnCameraIdleListener(null), 3 * 1000);
     }
 }

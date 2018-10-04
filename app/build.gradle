@@ -68,6 +68,8 @@ dependencies {
     // parcelable
     implementation 'org.parceler:parceler-api:1.1.11'
     annotationProcessor 'org.parceler:parceler:1.1.11'
+    // ui
+    implementation 'com.appyvet:materialrangebar:1.4.4'
 
     // TEST
     testImplementation 'junit:junit:4.12'

@@ -17,7 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.github.neone35.chargent.R;
-import com.github.neone35.chargent.map.MainMapActivity;
+import com.github.neone35.chargent.MainActivity;
 import com.github.neone35.chargent.model.Car;
 import android.location.Location;
 import com.google.android.gms.maps.model.LatLng;
@@ -97,7 +97,7 @@ public class CarListFragment extends Fragment {
     }
 
     private void setListAdapterData(View view) {
-        mCarListDisp = MainMapActivity.mCachedCarsResponse.subscribe(cars -> {
+        mCarListDisp = MainActivity.mCachedCarsResponse.subscribe(cars -> {
             setCarsDistanceFromUser(cars);
             // change sort order
             if (SORT_DISTANCE_ENABLED) {

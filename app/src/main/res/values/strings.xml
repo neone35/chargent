@@ -20,4 +20,7 @@
     <string name="distance_from_user">distance from user</string>
     <string name="add_km">%1$skm</string>
     <string name="add_percent">%1$s%%</string>
+    <string name="enabled">Enabled</string>
+    <string name="set_plate_number_filter">Plate # filter</string>
+    <string name="set_battery_filter">Battery % filter</string>
 </resources>

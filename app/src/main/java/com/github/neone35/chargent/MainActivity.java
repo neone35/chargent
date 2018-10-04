@@ -1,4 +1,4 @@
-package com.github.neone35.chargent.map;
+package com.github.neone35.chargent;
 
 import android.Manifest;
 import android.content.Context;
@@ -14,11 +14,13 @@ import android.view.MenuItem;
 
 import com.blankj.utilcode.util.ToastUtils;
 import com.facebook.stetho.Stetho;
+import com.facebook.stetho.common.ArrayListAccumulator;
 import com.github.neone35.chargent.CarInteractorImpl;
 import com.github.neone35.chargent.CarVM;
 import com.github.neone35.chargent.R;
 import com.github.neone35.chargent.list.CarListAdapter;
 import com.github.neone35.chargent.list.CarListFragment;
+import com.github.neone35.chargent.map.MapFragment;
 import com.github.neone35.chargent.model.Car;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.CameraUpdate;
@@ -37,11 +39,13 @@ import com.patloew.rxlocation.RxLocation;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.ListFragment;
@@ -55,7 +59,7 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import rx.subscriptions.CompositeSubscription;
 
-public class MainMapActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements FilterDialogFragment.FilterDialogListener {
 
     private CarVM carVM;
     private FragmentManager mFragmentManager;
@@ -63,6 +67,15 @@ public class MainMapActivity extends AppCompatActivity {
     private final String KEY_CURRENT_SUBTITLE = "current-subtitle";
     private MapFragment mMapFragment;
     private CarListFragment mListFragment;
+    public static boolean IS_BATTERY_FILTER_ENABLED = false;
+    public static boolean IS_PLATE_FILTER_ENABLED = false;
+    public static ArrayList<Car> carsList = new ArrayList<>();
+    Disposable carsDisp;
+    private int MIN_REMAINING_BATTERY;
+    private int MAX_REMAINING_BATTERY;
+    private final int MIN_PLATE_NUMBER = 0;
+    private final int MAX_PLATE_NUMBER = 0;
+
 
     @BindView(R.id.bnv_main)
     BottomNavigationView bnvMain;
@@ -87,9 +100,21 @@ public class MainMapActivity extends AppCompatActivity {
         // create cars viewmodel instance
         // interactor subscribesOn, viewmodel observesOn
         carVM = new CarVM(new CarInteractorImpl(), AndroidSchedulers.mainThread());
-        // cache fetched response
         if (internetExists()) {
+            // cache response to avoid calls on every subscription
             mCachedCarsResponse = carVM.fetch().cache();
+//            carsDisp = mCachedCarsResponse.subscribe(cars -> {
+//                carsList.addAll(cars);
+//                ArrayList<Integer> remainingBatteries = new ArrayList<>();
+//                ArrayList<String> plateNumbers = new ArrayList<>();
+//                for (int i = 0; i < cars.size(); i++) {
+//                    Car car = cars.get(i);
+//                    remainingBatteries.add(car.getBatteryPercentage());
+//                    plateNumbers.add(car.getPlateNumber());
+//                }
+//                MIN_REMAINING_BATTERY = Collections.min(remainingBatteries);
+//                MAX_REMAINING_BATTERY = Collections.max(remainingBatteries);
+//            });
             // listen to bottom navigation clicks
             listenBnv();
             // only create fragment if there was no configuration change
@@ -194,10 +219,11 @@ public class MainMapActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_appbar_filter_plate:
-                Logger.d("Filter menu item selected!");
+                showFilterDialog(R.string.set_plate_number_filter, true, 0, 0);
                 return true;
             case R.id.menu_appbar_filter_battery:
-                Logger.d("Sort menu item selected!");
+                showFilterDialog(R.string.set_battery_filter, true,
+                        MIN_REMAINING_BATTERY, MAX_REMAINING_BATTERY);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -211,5 +237,28 @@ public class MainMapActivity extends AppCompatActivity {
             return activeNetwork.isConnectedOrConnecting();
         }
         return false;
+    }
+
+    public void showFilterDialog(int titleID, boolean isEnabled, int tickStart, int tickEnd) {
+        // Create an instance of the dialog fragment and show it
+        DialogFragment dialog = FilterDialogFragment.newInstance(titleID, isEnabled, tickStart, tickEnd);
+        dialog.show(mFragmentManager, "FilterDialogFragment");
+    }
+
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialog, int titleID, boolean isEnabled) {
+        switch (titleID) {
+            case R.string.set_battery_filter:
+                IS_BATTERY_FILTER_ENABLED = isEnabled;
+            case R.string.set_plate_number_filter:
+                IS_PLATE_FILTER_ENABLED = isEnabled;
+        }
+        mMapFragment = MapFragment.newInstance();
+        inflateFragment(mMapFragment);
+    }
+
+    @Override
+    public void onDialogNegativeClick(DialogFragment dialog) {
+        dialog.dismiss();
     }
 }
