@@ -1,55 +1,31 @@
 package com.github.neone35.chargent;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.blankj.utilcode.util.ToastUtils;
 import com.facebook.stetho.Stetho;
-import com.facebook.stetho.common.ArrayListAccumulator;
-import com.github.neone35.chargent.CarInteractorImpl;
-import com.github.neone35.chargent.CarVM;
-import com.github.neone35.chargent.R;
-import com.github.neone35.chargent.list.CarListAdapter;
 import com.github.neone35.chargent.list.CarListFragment;
 import com.github.neone35.chargent.map.MapFragment;
 import com.github.neone35.chargent.model.Car;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.maps.CameraUpdate;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MapStyleOptions;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.Logger;
-import com.patloew.rxlocation.RxLocation;
-import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.ListFragment;
-import butterknife.BindColor;
 import butterknife.BindString;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -57,25 +33,20 @@ import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import rx.subscriptions.CompositeSubscription;
 
 public class MainActivity extends AppCompatActivity implements FilterDialogFragment.FilterDialogListener {
 
     private CarVM carVM;
     private FragmentManager mFragmentManager;
-    public static Single<List<Car>> mCachedCarsResponse = null;
+    public static Single<List<Car>> mCarsResponse = null;
     private final String KEY_CURRENT_SUBTITLE = "current-subtitle";
     private MapFragment mMapFragment;
     private CarListFragment mListFragment;
     public static boolean IS_BATTERY_FILTER_ENABLED = false;
     public static boolean IS_PLATE_FILTER_ENABLED = false;
-    public static ArrayList<Car> carsList = new ArrayList<>();
-    Disposable carsDisp;
-    private int MIN_REMAINING_BATTERY;
-    private int MAX_REMAINING_BATTERY;
-    private final int MIN_PLATE_NUMBER = 0;
-    private final int MAX_PLATE_NUMBER = 0;
-
+    CompositeDisposable disps = new CompositeDisposable();
+    public int BATTERY_MIN = 0;
+    public int BATTERY_MAX = 0;
 
     @BindView(R.id.bnv_main)
     BottomNavigationView bnvMain;
@@ -102,38 +73,47 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
         carVM = new CarVM(new CarInteractorImpl(), AndroidSchedulers.mainThread());
         if (internetExists()) {
             // cache response to avoid calls on every subscription
-            mCachedCarsResponse = carVM.fetch().cache();
-//            carsDisp = mCachedCarsResponse.subscribe(cars -> {
-//                carsList.addAll(cars);
-//                ArrayList<Integer> remainingBatteries = new ArrayList<>();
-//                ArrayList<String> plateNumbers = new ArrayList<>();
-//                for (int i = 0; i < cars.size(); i++) {
-//                    Car car = cars.get(i);
-//                    remainingBatteries.add(car.getBatteryPercentage());
-//                    plateNumbers.add(car.getPlateNumber());
-//                }
-//                MIN_REMAINING_BATTERY = Collections.min(remainingBatteries);
-//                MAX_REMAINING_BATTERY = Collections.max(remainingBatteries);
-//            });
+            mCarsResponse = carVM.fetch();
+            findBatteryRange();
+
             // listen to bottom navigation clicks
             listenBnv();
             // only create fragment if there was no configuration change
             if (savedInstanceState == null) {
                 mMapFragment = MapFragment.newInstance();
-                inflateFragment(mMapFragment);
+                inflateFragment(mMapFragment, false);
             }
         } else {
             ToastUtils.showShort(stringNoInternet);
         }
     }
 
-    private void inflateFragment(Fragment fragment) {
+    private void findBatteryRange() {
+        Disposable carsDisp = mCarsResponse.subscribe(cars -> {
+            ArrayList<Integer> remainingBatteries = new ArrayList<>();
+            for (int i = 0; i < cars.size(); i++) {
+                remainingBatteries.add(cars.get(i).getBatteryPercentage());
+            }
+            // set min and max values of current car batteries
+            BATTERY_MIN = Collections.min(remainingBatteries);
+            BATTERY_MAX = Collections.max(remainingBatteries);
+        });
+        disps.add(carsDisp);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        disps.dispose();
+    }
+
+    private void inflateFragment(Fragment fragment, boolean inflateCurrent) {
         Fragment fragToInflate = new Fragment();
         if (fragment instanceof MapFragment) {
-            fragToInflate = checkFragmentManager(fragment, mapTitle);
+            fragToInflate = checkFragmentManager(fragment, mapTitle, inflateCurrent);
             if (fragToInflate == null) return;
         } else if (fragment instanceof CarListFragment) {
-            fragToInflate = checkFragmentManager(fragment, listTitle);
+            fragToInflate = checkFragmentManager(fragment, listTitle, inflateCurrent);
             if (fragToInflate == null) return;
         }
         mFragmentManager.beginTransaction()
@@ -141,11 +121,30 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
                 .commit();
     }
 
-    private Fragment checkFragmentManager(Fragment fragment, String subTitle) {
-        if (!mFragmentManager.getFragments().contains(fragment)) {
+    private Fragment checkFragmentManager(Fragment fragment, String subTitle, boolean inflateCurrent) {
+        if (!inflateCurrent) {
+            // check if same fragment instance is current
+            if (!mFragmentManager.getFragments().contains(fragment)) {
+                // set new subtitle
+                setActionBar(appName, subTitle);
+                return fragment;
+            } else {
+                return null;
+            }
+        } else {
+            // return same fragment
             setActionBar(appName, subTitle);
             return fragment;
-        } else { return null; }
+        }
+    }
+
+    private Fragment getCurrentFragmentInstance(Fragment fragment) {
+        if (fragment instanceof MapFragment) {
+            return MapFragment.newInstance();
+        } else if (fragment instanceof CarListFragment) {
+            return CarListFragment.newInstance(1, MapFragment.mUserLatLng);
+        }
+        return null;
     }
 
     @Override
@@ -177,11 +176,11 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
             switch (selectedItemId) {
                 case R.id.bnv_action_map:
                     mMapFragment = MapFragment.newInstance();
-                    inflateFragment(mMapFragment);
+                    inflateFragment(mMapFragment, false);
                     break;
                 case R.id.bnv_action_list:
                     mListFragment = CarListFragment.newInstance(1, MapFragment.mUserLatLng);
-                    inflateFragment(mListFragment);
+                    inflateFragment(mListFragment, false);
                     break;
             }
             return true;
@@ -223,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
                 return true;
             case R.id.menu_appbar_filter_battery:
                 showFilterDialog(R.string.set_battery_filter, true,
-                        MIN_REMAINING_BATTERY, MAX_REMAINING_BATTERY);
+                        BATTERY_MIN, BATTERY_MAX);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -246,15 +245,26 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
     }
 
     @Override
-    public void onDialogPositiveClick(DialogFragment dialog, int titleID, boolean isEnabled) {
+    public void onDialogPositiveClick(DialogFragment dialog, int titleID,
+                                      boolean isEnabled, String leftValue, String rightValue) {
+        // switch on/off filters by their title
         switch (titleID) {
             case R.string.set_battery_filter:
                 IS_BATTERY_FILTER_ENABLED = isEnabled;
+                carVM.BATTERY_FILTER_START = Integer.parseInt(leftValue);
+                carVM.BATTERY_FILTER_END = Integer.parseInt(rightValue);
+                Logger.d(carVM.BATTERY_FILTER_START);
+                Logger.d(carVM.BATTERY_FILTER_END);
+                Disposable carsFilterDisp = mCarsResponse.subscribe(cars -> Logger.d(cars.size()));
+                disps.add(carsFilterDisp);
+                inflateFragment(
+                        getCurrentFragmentInstance(mFragmentManager.getFragments().get(0)),
+                        true);
             case R.string.set_plate_number_filter:
                 IS_PLATE_FILTER_ENABLED = isEnabled;
         }
-        mMapFragment = MapFragment.newInstance();
-        inflateFragment(mMapFragment);
+//        mMapFragment = MapFragment.newInstance();
+//        inflateFragment(mMapFragment);
     }
 
     @Override

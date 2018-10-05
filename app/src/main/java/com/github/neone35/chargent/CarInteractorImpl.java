@@ -5,6 +5,7 @@ import com.github.neone35.chargent.model.Car;
 
 import java.util.List;
 
+import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
@@ -16,7 +17,7 @@ public class CarInteractorImpl implements CarInteractor {
 
     private CarService carService;
 
-    public CarInteractorImpl() {
+    CarInteractorImpl() {
         OkHttpClient okClient = new OkHttpClient.Builder()
                 .addNetworkInterceptor(new StethoInterceptor())
                 .build();

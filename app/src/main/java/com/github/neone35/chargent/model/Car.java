@@ -7,7 +7,7 @@ import org.parceler.Parcel;
 
 @Parcel
 @Generated("com.robohorse.robopojogenerator")
-public class Car {
+public class Car implements Comparable<Car> {
 
 	@SerializedName("batteryEstimatedDistance")
 	int batteryEstimatedDistance;
@@ -130,5 +130,10 @@ public class Car {
 
     public void setDistanceFromUser(float distanceFromUser) {
         this.distanceFromUser = distanceFromUser;
+    }
+
+    @Override
+    public int compareTo(Car car) {
+        return 0;
     }
 }

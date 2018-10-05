@@ -40,7 +40,8 @@ public class FilterDialogFragment extends DialogFragment {
      * implement this interface in order to receive event callbacks.
      * Each method passes the DialogFragment in case the host needs to query it. */
     public interface FilterDialogListener {
-        void onDialogPositiveClick(DialogFragment dialog, int titleID, boolean isEnabled);
+        void onDialogPositiveClick(DialogFragment dialog, int titleID,
+                                   boolean isEnabled, String leftValue, String rightValue);
         void onDialogNegativeClick(DialogFragment dialog);
     }
 
@@ -79,13 +80,22 @@ public class FilterDialogFragment extends DialogFragment {
         builder.setView(dialogView)
                 .setTitle(getString(mTitleID))
                 .setPositiveButton("OK", (dialogInterface, id) ->
-                        mListener.onDialogPositiveClick(this, mTitleID, cbEnabled.isChecked()))
+                        mListener.onDialogPositiveClick(this, mTitleID,
+                                cbEnabled.isChecked(), rbFilter.getLeftPinValue(), rbFilter.getRightPinValue()))
                 .setNegativeButton("Cancel", (dialogInterface, i) ->
                         mListener.onDialogNegativeClick(this));
 
         setUpCheckbox();
+        setUpRangeBar();
 
         return builder.create();
+    }
+
+    private void setUpRangeBar() {
+        // first set end, then start
+        rbFilter.setTickEnd(mTickEnd);
+        rbFilter.setTickStart(mTickStart);
+        rbFilter.setTickInterval(1);
     }
 
     private void setUpCheckbox() {

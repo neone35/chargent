@@ -89,7 +89,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 //        if (MainActivity.IS_BATTERY_FILTER_ENABLED)
 
         // add car markers and zoom to them
-        Disposable carsMapDisp = MainActivity.mCachedCarsResponse.subscribe(this::addCarMarkers);
+        Disposable carsMapDisp = MainActivity.mCarsResponse.subscribe(this::addCarMarkers);
         disps.add(carsMapDisp);
 
         // add user marker after location permission granted
@@ -138,7 +138,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         }
         LatLngBounds latLngBounds = MapUtils.getMarkerBounds(carMarkerList);
         int padding = 10; // offset from edges of the map in pixels
-        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(latLngBounds, padding);
+        int width = Objects.requireNonNull(this.getView()).getWidth(); //map fragment(view) width;
+        int height = Objects.requireNonNull(this.getView()).getHeight(); //map fragment(view) height;
+        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(latLngBounds, width, height, padding);
         // zoom to found cars bounds
         mMap.animateCamera(cu);
     }

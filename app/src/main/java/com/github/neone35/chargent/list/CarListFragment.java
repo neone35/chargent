@@ -97,7 +97,7 @@ public class CarListFragment extends Fragment {
     }
 
     private void setListAdapterData(View view) {
-        mCarListDisp = MainActivity.mCachedCarsResponse.subscribe(cars -> {
+        mCarListDisp = MainActivity.mCarsResponse.subscribe(cars -> {
             setCarsDistanceFromUser(cars);
             // change sort order
             if (SORT_DISTANCE_ENABLED) {
