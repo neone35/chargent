@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
@@ -72,6 +73,28 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         super.onDetach();
     }
 
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        //cheap way to handle case when cars are available before maps
+        getMapAsync(googleMap -> {
+            Disposable disposable = MainActivity.carVM.getState()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(carsState -> {
+                    addCarMarkers(carsState.getCars());
+                });
+            compositeDisposable.add(disposable);
+        });
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        compositeDisposable.clear();
+    }
+
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -88,9 +111,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
 //        if (MainActivity.IS_BATTERY_FILTER_ENABLED)
 
-        // add car markers and zoom to them
-        Disposable carsMapDisp = MainActivity.mCarsResponse.subscribe(this::addCarMarkers);
-        disps.add(carsMapDisp);
 
         // add user marker after location permission granted
         Disposable permissionDisp = rxPermissions.request(Manifest.permission.ACCESS_FINE_LOCATION)
