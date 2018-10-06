@@ -8,6 +8,8 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
 import android.view.LayoutInflater;
@@ -20,6 +22,7 @@ import com.github.neone35.chargent.R;
 import com.github.neone35.chargent.MainActivity;
 import com.github.neone35.chargent.model.Car;
 import android.location.Location;
+
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Collections;
@@ -31,9 +34,8 @@ public class CarListFragment extends Fragment {
     private static final String ARG_USER_LAT_LNG = "user-latlng";
     private int mColumnCount = 0;
     private LatLng mUserLatLng = null;
-    private Disposable mCarListDisp;
-    private boolean SORT_DISTANCE_ENABLED = false;
     private Context mCtx;
+    private CompositeDisposable disps = new CompositeDisposable();
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -96,46 +98,63 @@ public class CarListFragment extends Fragment {
         }
     }
 
-    private void setListAdapterData(View view) {
-        mCarListDisp = MainActivity.mCarsResponse.subscribe(cars -> {
-            setCarsDistanceFromUser(cars);
-            // change sort order
-            if (SORT_DISTANCE_ENABLED) {
-                sortByDistanceToUser(cars);
-            } else {
-                Collections.shuffle(cars);
-            }
-            // Set the adapter on recylerView
-            if (view instanceof RecyclerView) {
-                Context context = view.getContext();
-                RecyclerView rv = (RecyclerView) view;
-                if (mColumnCount <= 1) {
-                    rv.setLayoutManager(new LinearLayoutManager(context));
-                } else {
-                    rv.setLayoutManager(new GridLayoutManager(context, mColumnCount));
-                }
-                // set or swap adapter (if already set)
-                if (rv.getAdapter() == null) {
-                    rv.setAdapter(new CarListAdapter(cars, mCtx));
-                } else {
-                    rv.swapAdapter(new CarListAdapter(cars, mCtx), true);
-                }
-            }
-        });
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        //again, this should be access using some kind of Dependency Injection
+
+        Disposable disp = MainActivity.carVM.getState().observeOn(AndroidSchedulers.mainThread())
+            .subscribe(carsState -> {
+                syncMenu(carsState.isSortByDistance);
+                displayCars(carsState.getCars(),carsState.isSortByDistance);
+            });
+        disps.add(disp);
+    }
+
+    private void syncMenu(boolean isSortByDistance) {
+        //todo invalidate menu, since icon should be different
+    }
+
+
+    //ideally, we should receive already sorted data
+    private void displayCars(List<Car> cars, boolean isSortByDistance) {
+        //we can use getView.findviewbyid here because this method will only be called between onStart and onStop
+        RecyclerView rv = getView().findViewById(R.id.car_list);
+        setCarsDistanceFromUser(cars);
+        // change sort order
+        if (isSortByDistance) {
+            sortByDistanceToUser(cars);
+        } else {
+            Collections.shuffle(cars);
+        }
+        // Set the adapter on recylerView
+        Context context = getView().getContext();
+        if (mColumnCount <= 1) {
+            rv.setLayoutManager(new LinearLayoutManager(context));
+        } else {
+            rv.setLayoutManager(new GridLayoutManager(context, mColumnCount));
+        }
+        // set or swap adapter (if already set)
+        if (rv.getAdapter() == null) {
+            rv.setAdapter(new CarListAdapter(cars, mCtx));
+        } else {
+            rv.swapAdapter(new CarListAdapter(cars, mCtx), true);
+        }
+
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        disps.dispose();
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_car_list, container, false);
-        setListAdapterData(rootView);
         return rootView;
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mCarListDisp.dispose();
     }
 
     @Override
@@ -149,15 +168,19 @@ public class CarListFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_appbar_sort_distance:
-                if (!SORT_DISTANCE_ENABLED) {
-                    SORT_DISTANCE_ENABLED = true;
-                    item.setIcon(R.drawable.ic_distance_24dp);
-                } else {
-                    SORT_DISTANCE_ENABLED = false;
-                    item.setIcon(R.drawable.ic_distance_stroke_24dp);
-                }
-                mCarListDisp.dispose();
-                setListAdapterData(this.getView());
+                //------all this -------
+//                if (!SORT_DISTANCE_ENABLED) {
+//                    SORT_DISTANCE_ENABLED = true;
+//                    item.setIcon(R.drawable.ic_distance_24dp);
+//                } else {
+//                    SORT_DISTANCE_ENABLED = false;
+//                    item.setIcon(R.drawable.ic_distance_stroke_24dp);
+//                }
+//                mCarListDisp.dispose();
+//                setListAdapterData(this.getView());
+                //---- becomes --------
+                MainActivity.carVM.sortByDistanceClicked();
+
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

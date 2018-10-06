@@ -12,14 +12,11 @@ import com.blankj.utilcode.util.ToastUtils;
 import com.facebook.stetho.Stetho;
 import com.github.neone35.chargent.list.CarListFragment;
 import com.github.neone35.chargent.map.MapFragment;
-import com.github.neone35.chargent.model.Car;
+import com.github.neone35.chargent.viewmodel.CarVM;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.Logger;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,16 +26,15 @@ import androidx.fragment.app.FragmentManager;
 import butterknife.BindString;
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
 public class MainActivity extends AppCompatActivity implements FilterDialogFragment.FilterDialogListener {
 
-    private CarVM carVM;
+    //Ignore this static field. In real life, some form of Dependency Injection would be used.
+    public static CarVM carVM;
     private FragmentManager mFragmentManager;
-    public static Single<List<Car>> mCarsResponse = null;
     private final String KEY_CURRENT_SUBTITLE = "current-subtitle";
     private MapFragment mMapFragment;
     private CarListFragment mListFragment;
@@ -73,9 +69,6 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
         carVM = new CarVM(new CarInteractorImpl(), AndroidSchedulers.mainThread());
         if (internetExists()) {
             // cache response to avoid calls on every subscription
-            mCarsResponse = carVM.fetch();
-            findBatteryRange();
-
             // listen to bottom navigation clicks
             listenBnv();
             // only create fragment if there was no configuration change
@@ -88,22 +81,26 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
         }
     }
 
-    private void findBatteryRange() {
-        Disposable carsDisp = mCarsResponse.subscribe(cars -> {
-            ArrayList<Integer> remainingBatteries = new ArrayList<>();
-            for (int i = 0; i < cars.size(); i++) {
-                remainingBatteries.add(cars.get(i).getBatteryPercentage());
-            }
-            // set min and max values of current car batteries
-            BATTERY_MIN = Collections.min(remainingBatteries);
-            BATTERY_MAX = Collections.max(remainingBatteries);
-        });
-        disps.add(carsDisp);
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        carVM.onCleared();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Disposable disposable = carVM.getState().observeOn(AndroidSchedulers.mainThread())
+        .subscribe(carsState -> {
+            BATTERY_MAX = carsState.batteryMax;
+            BATTERY_MIN = carsState.batteryMin;
+        });
+        disps.add(disposable);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
         disps.dispose();
     }
 
@@ -251,12 +248,7 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
         switch (titleID) {
             case R.string.set_battery_filter:
                 IS_BATTERY_FILTER_ENABLED = isEnabled;
-                carVM.BATTERY_FILTER_START = Integer.parseInt(leftValue);
-                carVM.BATTERY_FILTER_END = Integer.parseInt(rightValue);
-                Logger.d(carVM.BATTERY_FILTER_START);
-                Logger.d(carVM.BATTERY_FILTER_END);
-                Disposable carsFilterDisp = mCarsResponse.subscribe(cars -> Logger.d(cars.size()));
-                disps.add(carsFilterDisp);
+                carVM.setBatteryFilter(Integer.parseInt(leftValue),Integer.parseInt(rightValue));
                 inflateFragment(
                         getCurrentFragmentInstance(mFragmentManager.getFragments().get(0)),
                         true);
