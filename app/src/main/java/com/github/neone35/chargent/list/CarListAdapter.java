@@ -65,8 +65,7 @@ public class CarListAdapter extends RecyclerView.Adapter<CarListAdapter.ViewHold
                         "%.1f", car.getDistanceFromUser() / 1000)));
         if (car.isIsCharging()) {
             holder.tvCharging.setText(mCtx.getResources().getString(R.string.yes));
-        }
-        else {
+        } else {
             holder.tvCharging.setText(mCtx.getResources().getString(R.string.no));
         }
     }

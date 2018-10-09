@@ -37,7 +37,7 @@ public class CarInteractorImpl implements CarInteractor {
     @Override
     public Single<List<Car>> fetch() {
         // subscribe to receive next events
-        // perform network call on separate (IO) thread
+        // perform network call (subscribe) on separate (IO) thread
         return carService.getAvailableCars().subscribeOn(Schedulers.io());
     }
 }

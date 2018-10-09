@@ -30,7 +30,7 @@ public class Car implements Comparable<Car> {
 	@SerializedName("plateNumber")
 	String plateNumber;
 
-	float distanceFromUser;
+	float distanceFromUser = 0;
 
     // empty constructor needed by the Parceler library
 	public Car() { }

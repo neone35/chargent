@@ -39,7 +39,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
     private GoogleMap mMap;
     // keep all disposables in one variable to easily unsubscribe
-    private CompositeDisposable disps = new CompositeDisposable();
+    private CompositeDisposable mDisps = new CompositeDisposable();
     public static LatLng mUserLatLng;
     private Context mCtx;
     private RxLocation rxLocation;
@@ -67,32 +67,22 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     }
 
     @Override
-    public void onDetach() {
-        // clear all, but allow new
-        disps.clear();
-        super.onDetach();
-    }
-
-    private CompositeDisposable compositeDisposable = new CompositeDisposable();
-
-    @Override
     public void onStart() {
         super.onStart();
-        //cheap way to handle case when cars are available before maps
+        // dont wait for onMapReady callback by onCreate which handles permissions
+        // because cars are available before maps and require no dangerous permissions
         getMapAsync(googleMap -> {
             Disposable disposable = MainActivity.carVM.getState()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(carsState -> {
-                    addCarMarkers(carsState.getCars());
-                });
-            compositeDisposable.add(disposable);
+                .subscribe(carsState -> addCarMarkers(carsState.getCars()));
+            mDisps.add(disposable);
         });
     }
 
     @Override
     public void onStop() {
+        // clear all, but allow new
+        mDisps.clear();
         super.onStop();
-        compositeDisposable.clear();
     }
 
     /**
@@ -109,8 +99,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
                 Objects.requireNonNull(this.getActivity()), R.raw.style_map_aubergine));
 
-//        if (MainActivity.IS_BATTERY_FILTER_ENABLED)
-
+//        if (MainActivity.BATTERY_FILTER_ENABLED)
 
         // add user marker after location permission granted
         Disposable permissionDisp = rxPermissions.request(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -121,7 +110,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                         ToastUtils.showShort("Could not find your location");
                     }
                 });
-        disps.add(permissionDisp);
+        mDisps.add(permissionDisp);
     }
 
     private void addUserMarker() {
@@ -140,7 +129,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                                     MapUtils.generateMarker(mCtx, mUserLatLng, R.drawable.ic_android_24dp));
                             zoomToUserSeconds();
                         });
-                disps.add(locationDisp);
+                mDisps.add(locationDisp);
             }
         }
     }

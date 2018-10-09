@@ -1,41 +1,45 @@
 package com.github.neone35.chargent.list;
 
 import android.content.Context;
+import android.location.Location;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
-
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.github.neone35.chargent.R;
 import com.github.neone35.chargent.MainActivity;
+import com.github.neone35.chargent.R;
 import com.github.neone35.chargent.model.Car;
-import android.location.Location;
-
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Observable;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 
 public class CarListFragment extends Fragment {
 
+    @BindView(R.id.rv_car_list)
+    RecyclerView rvCarList;
     private static final String ARG_COLUMN_COUNT = "column-count";
     private static final String ARG_USER_LAT_LNG = "user-latlng";
     private int mColumnCount = 0;
     private LatLng mUserLatLng = null;
     private Context mCtx;
-    private CompositeDisposable disps = new CompositeDisposable();
+    private CompositeDisposable mDisps = new CompositeDisposable();
+    private MenuItem mSortMenuItem;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -65,81 +69,51 @@ public class CarListFragment extends Fragment {
         }
     }
 
-    private Location getLocation(LatLng latLng) {
-        Location userLoc = new Location("");
-        userLoc.setLatitude(latLng.latitude);
-        userLoc.setLongitude(latLng.longitude);
-        return userLoc;
-    }
-
-    private float calcCarDistanceFromUser(Car car) {
-        double carLat = car.getLocation().getLatitude();
-        double carLon = car.getLocation().getLongitude();
-        Location carLoc = getLocation(new LatLng(carLat, carLon));
-        Location userLoc = getLocation(mUserLatLng);
-        return userLoc.distanceTo(carLoc);
-    }
-
-    private void sortByDistanceToUser(List<Car> unsortedCars) {
-        Collections.sort(unsortedCars, (car1, car2) -> {
-            float car1DistToUser = car1.getDistanceFromUser();
-            float car2DistToUser = car2.getDistanceFromUser();
-            if(car1DistToUser == car2DistToUser)
-                return 0;
-            return car1DistToUser < car2DistToUser ? -1 : 1;
-        });
-    }
-
-    private void setCarsDistanceFromUser(List<Car> carList) {
-        for (int i = 0; i < carList.size(); i++) {
-            Car car = carList.get(i);
-            float carDistanceFromUser = calcCarDistanceFromUser(car);
-            car.setDistanceFromUser(carDistanceFromUser);
-        }
-    }
-
-
     @Override
     public void onStart() {
         super.onStart();
-        //again, this should be access using some kind of Dependency Injection
-
-        Disposable disp = MainActivity.carVM.getState().observeOn(AndroidSchedulers.mainThread())
-            .subscribe(carsState -> {
-                syncMenu(carsState.isSortByDistance);
-                displayCars(carsState.getCars(),carsState.isSortByDistance);
-            });
-        disps.add(disp);
+        // again, this should be access using some kind of Dependency Injection
+        Disposable disp = MainActivity.carVM.getState()
+                .subscribe(carsState -> {
+                    List<Car> carList = carsState.getCars();
+                    switchMenuIcon(carsState.isSortByDistance);
+                    carsState.setCarsDistanceFromUser(carList, mUserLatLng);
+                    displayCars(carList);
+                });
+        mDisps.add(disp);
     }
 
-    private void syncMenu(boolean isSortByDistance) {
-        //todo invalidate menu, since icon should be different
-    }
-
-
-    //ideally, we should receive already sorted data
-    private void displayCars(List<Car> cars, boolean isSortByDistance) {
-        //we can use getView.findviewbyid here because this method will only be called between onStart and onStop
-        RecyclerView rv = getView().findViewById(R.id.car_list);
-        setCarsDistanceFromUser(cars);
-        // change sort order
+    private void switchMenuIcon(boolean isSortByDistance) {
         if (isSortByDistance) {
-            sortByDistanceToUser(cars);
+            mSortMenuItem.setIcon(R.drawable.ic_distance_24dp);
         } else {
-            Collections.shuffle(cars);
+            mSortMenuItem.setIcon(R.drawable.ic_distance_stroke_24dp);
         }
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        // turn on 'sort' option
+        menu.getItem(1).setEnabled(true);
+        // assign global menu item to mirror current sort status
+        mSortMenuItem = menu.getItem(1).getSubMenu().findItem(R.id.menu_appbar_sort_distance);
+        super.onPrepareOptionsMenu(menu);
+    }
+
+    private void displayCars(List<Car> cars) {
         // Set the adapter on recylerView
-        Context context = getView().getContext();
+        Context context = Objects.requireNonNull(getView()).getContext();
         if (mColumnCount <= 1) {
-            rv.setLayoutManager(new LinearLayoutManager(context));
+            rvCarList.setLayoutManager(new LinearLayoutManager(context));
         } else {
-            rv.setLayoutManager(new GridLayoutManager(context, mColumnCount));
+            rvCarList.setLayoutManager(new GridLayoutManager(context, mColumnCount));
         }
-        // set or swap adapter (if already set)
-        if (rv.getAdapter() == null) {
-            rv.setAdapter(new CarListAdapter(cars, mCtx));
+
+        // set or swap (if already set) adapter
+        if (rvCarList.getAdapter() == null) {
+            rvCarList.setAdapter(new CarListAdapter(cars, mCtx));
         } else {
-            rv.swapAdapter(new CarListAdapter(cars, mCtx), true);
+            rvCarList.swapAdapter(new CarListAdapter(cars, mCtx), true);
         }
 
     }
@@ -147,40 +121,28 @@ public class CarListFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
-        disps.dispose();
+        mDisps.clear();
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_car_list, container, false);
+        ButterKnife.bind(this, rootView);
         return rootView;
-    }
-
-    @Override
-    public void onPrepareOptionsMenu(Menu menu) {
-        // turn on 'sort' option
-        menu.getItem(1).setEnabled(true);
-        super.onPrepareOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_appbar_sort_distance:
-                //------all this -------
-//                if (!SORT_DISTANCE_ENABLED) {
-//                    SORT_DISTANCE_ENABLED = true;
-//                    item.setIcon(R.drawable.ic_distance_24dp);
-//                } else {
-//                    SORT_DISTANCE_ENABLED = false;
-//                    item.setIcon(R.drawable.ic_distance_stroke_24dp);
-//                }
-//                mCarListDisp.dispose();
-//                setListAdapterData(this.getView());
-                //---- becomes --------
                 MainActivity.carVM.sortByDistanceClicked();
-
+                Disposable disp = MainActivity.carVM.getState()
+                        .subscribe(carsState -> {
+                            switchMenuIcon(carsState.isSortByDistance);
+                            displayCars(carsState.getCars());
+                        });
+                mDisps.add(disp);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

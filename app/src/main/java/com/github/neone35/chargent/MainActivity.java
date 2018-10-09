@@ -38,8 +38,8 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
     private final String KEY_CURRENT_SUBTITLE = "current-subtitle";
     private MapFragment mMapFragment;
     private CarListFragment mListFragment;
-    public static boolean IS_BATTERY_FILTER_ENABLED = false;
-    public static boolean IS_PLATE_FILTER_ENABLED = false;
+    public static boolean BATTERY_FILTER_ENABLED = false;
+    public static boolean PLATE_FILTER_ENABLED = false;
     CompositeDisposable disps = new CompositeDisposable();
     public int BATTERY_MIN = 0;
     public int BATTERY_MAX = 0;
@@ -90,10 +90,10 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
     @Override
     protected void onStart() {
         super.onStart();
-        Disposable disposable = carVM.getState().observeOn(AndroidSchedulers.mainThread())
+        Disposable disposable = carVM.getState()
         .subscribe(carsState -> {
-            BATTERY_MAX = carsState.batteryMax;
-            BATTERY_MIN = carsState.batteryMin;
+            BATTERY_MAX = carsState.mBatteryMax;
+            BATTERY_MIN = carsState.mBatteryMin;
         });
         disps.add(disposable);
     }
@@ -247,13 +247,13 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
         // switch on/off filters by their title
         switch (titleID) {
             case R.string.set_battery_filter:
-                IS_BATTERY_FILTER_ENABLED = isEnabled;
+                BATTERY_FILTER_ENABLED = isEnabled;
                 carVM.setBatteryFilter(Integer.parseInt(leftValue),Integer.parseInt(rightValue));
                 inflateFragment(
                         getCurrentFragmentInstance(mFragmentManager.getFragments().get(0)),
                         true);
             case R.string.set_plate_number_filter:
-                IS_PLATE_FILTER_ENABLED = isEnabled;
+                PLATE_FILTER_ENABLED = isEnabled;
         }
 //        mMapFragment = MapFragment.newInstance();
 //        inflateFragment(mMapFragment);
