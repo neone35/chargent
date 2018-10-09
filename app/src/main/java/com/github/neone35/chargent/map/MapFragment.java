@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
@@ -44,6 +43,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     private Context mCtx;
     private RxLocation rxLocation;
     private RxPermissions rxPermissions;
+    private List<Marker> mCarMarkerList = new ArrayList<>();
 
     public MapFragment() {
         // Required empty public constructor}
@@ -73,7 +73,13 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         // because cars are available before maps and require no dangerous permissions
         getMapAsync(googleMap -> {
             Disposable disposable = MainActivity.carVM.getState()
-                .subscribe(carsState -> addCarMarkers(carsState.getCars()));
+                .subscribe(carsState -> {
+                    if (!carsState.getCars().isEmpty()) {
+                        addCarMarkers(carsState.getCars());
+                    } else {
+                        ToastUtils.showShort("No cars found. Change filters");
+                    }
+                });
             mDisps.add(disposable);
         });
     }
@@ -99,8 +105,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
                 Objects.requireNonNull(this.getActivity()), R.raw.style_map_aubergine));
 
-//        if (MainActivity.BATTERY_FILTER_ENABLED)
-
         // add user marker after location permission granted
         Disposable permissionDisp = rxPermissions.request(Manifest.permission.ACCESS_FINE_LOCATION)
                 .subscribe(granted -> {
@@ -125,9 +129,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                         .subscribe(address -> {
                             // Add a marker of user location & zoom to it
                             mUserLatLng = new LatLng(address.getLatitude(), address.getLongitude());
-                            mMap.addMarker(
+                            Marker userMarker = mMap.addMarker(
                                     MapUtils.generateMarker(mCtx, mUserLatLng, R.drawable.ic_android_24dp));
-                            zoomToUserSeconds();
+                            zoomToAllSeconds(userMarker);
                         });
                 mDisps.add(locationDisp);
             }
@@ -135,7 +139,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     }
 
     private void addCarMarkers(List<Car> cars) {
-        List<Marker> carMarkerList = new ArrayList<>();
+        mCarMarkerList = new ArrayList<>();
         for (int i = 0; i < cars.size(); i++) {
             Car car = cars.get(i);
             double latitude = car.getLocation().getLatitude();
@@ -143,10 +147,10 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             LatLng latLng = new LatLng(latitude, longitude);
             Marker carMarker = mMap.addMarker(
                     MapUtils.generateMarker(this.getActivity(), latLng, R.drawable.ic_car_24dp));
-            carMarkerList.add(carMarker);
+            mCarMarkerList.add(carMarker);
         }
-        LatLngBounds latLngBounds = MapUtils.getMarkerBounds(carMarkerList);
-        int padding = 10; // offset from edges of the map in pixels
+        LatLngBounds latLngBounds = MapUtils.getMarkerBounds(mCarMarkerList);
+        int padding = 100; // offset from edges of the map in pixels
         int width = Objects.requireNonNull(this.getView()).getWidth(); //map fragment(view) width;
         int height = Objects.requireNonNull(this.getView()).getHeight(); //map fragment(view) height;
         CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(latLngBounds, width, height, padding);
@@ -154,11 +158,15 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         mMap.animateCamera(cu);
     }
 
-    private void zoomToUserSeconds() {
+    private void zoomToAllSeconds(Marker userMarker) {
+        mCarMarkerList.add(userMarker);
+        List<Marker> userAndCarMarkers = new ArrayList<>(mCarMarkerList);
+        LatLngBounds userAndCarsBounds = MapUtils.getMarkerBounds(userAndCarMarkers);
+        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(userAndCarsBounds, 100);
         // zoom to user location when idle
-        mMap.setOnCameraIdleListener(() -> mMap.animateCamera(CameraUpdateFactory.newLatLng(mUserLatLng)));
+        mMap.setOnCameraIdleListener(() -> mMap.animateCamera(cu));
         // remove idle listener after seconds
-        final Handler handler = new Handler();
-        handler.postDelayed(() -> mMap.setOnCameraIdleListener(null), 3 * 1000);
+//        final Handler handler = new Handler();
+//        handler.postDelayed(() -> mMap.setOnCameraIdleListener(null), 3 * 1000);
     }
 }

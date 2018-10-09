@@ -1,7 +1,6 @@
 package com.github.neone35.chargent.list;
 
 import android.content.Context;
-import android.location.Location;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -14,10 +13,8 @@ import com.github.neone35.chargent.R;
 import com.github.neone35.chargent.model.Car;
 import com.google.android.gms.maps.model.LatLng;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Observable;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -136,13 +133,7 @@ public class CarListFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_appbar_sort_distance:
-                MainActivity.carVM.sortByDistanceClicked();
-                Disposable disp = MainActivity.carVM.getState()
-                        .subscribe(carsState -> {
-                            switchMenuIcon(carsState.isSortByDistance);
-                            displayCars(carsState.getCars());
-                        });
-                mDisps.add(disp);
+                MainActivity.carVM.setSortingByDistance();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

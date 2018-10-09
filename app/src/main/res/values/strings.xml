@@ -23,4 +23,6 @@
     <string name="enabled">Enabled</string>
     <string name="set_plate_number_filter">Plate # filter</string>
     <string name="set_battery_filter">Battery % filter</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 </resources>

@@ -5,7 +5,6 @@ import com.github.neone35.chargent.model.Car;
 
 import java.util.List;
 
-import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
@@ -36,8 +35,7 @@ public class CarInteractorImpl implements CarInteractor {
 
     @Override
     public Single<List<Car>> fetch() {
-        // subscribe to receive next events
-        // perform network call (subscribe) on separate (IO) thread
+        // define thread (separate IO) for call income
         return carService.getAvailableCars().subscribeOn(Schedulers.io());
     }
 }

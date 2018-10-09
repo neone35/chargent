@@ -21,14 +21,18 @@ import butterknife.ButterKnife;
 
 public class FilterDialogFragment extends DialogFragment {
 
+    private boolean mIsFilterEnabled = false;
     private static final String ARG_TITLE_ID = "dialog-message";
     private static final String ARG_ENABLED = "is-enabled";
     private static final String ARG_TICK_START = "tick-start";
     private static final String ARG_TICK_END = "tick-end";
+    private static final String ARG_LEFT_VALUE = "left-value";
+    private static final String ARG_RIGHT_VALUE = "right-value";
     private int mTitleID;
-    private boolean mIsEnabled = false;
     private int mTickStart;
     private int mTickEnd;
+    private int mLeftValue;
+    private int mRightValue;
     private Context mCtx;
     private FilterDialogListener mListener;
     @BindView(R.id.cb_enabled)
@@ -46,13 +50,16 @@ public class FilterDialogFragment extends DialogFragment {
     }
 
     static FilterDialogFragment newInstance(int titleID, boolean isEnabled,
-                                            int tickStart, int tickEnd) {
+                                            int tickStart, int tickEnd,
+                                            int leftValue, int rightValue) {
         FilterDialogFragment fragment = new FilterDialogFragment();
         Bundle args = new Bundle();
         args.putInt(ARG_TITLE_ID, titleID);
         args.putBoolean(ARG_ENABLED, isEnabled);
         args.putInt(ARG_TICK_START, tickStart);
         args.putInt(ARG_TICK_END, tickEnd);
+        args.putInt(ARG_LEFT_VALUE, leftValue);
+        args.putInt(ARG_RIGHT_VALUE, rightValue);
         fragment.setArguments(args);
         return fragment;
     }
@@ -62,9 +69,11 @@ public class FilterDialogFragment extends DialogFragment {
         mCtx = this.getActivity();
         if (getArguments() != null) {
             mTitleID = getArguments().getInt(ARG_TITLE_ID);
-            mIsEnabled = getArguments().getBoolean(ARG_ENABLED);
+            mIsFilterEnabled = getArguments().getBoolean(ARG_ENABLED);
             mTickStart = getArguments().getInt(ARG_TICK_START);
             mTickEnd = getArguments().getInt(ARG_TICK_END);
+            mLeftValue = getArguments().getInt(ARG_LEFT_VALUE);
+            mRightValue = getArguments().getInt(ARG_RIGHT_VALUE);
         }
         super.onCreate(savedInstanceState);
     }
@@ -79,10 +88,10 @@ public class FilterDialogFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(mCtx);
         builder.setView(dialogView)
                 .setTitle(getString(mTitleID))
-                .setPositiveButton("OK", (dialogInterface, id) ->
+                .setPositiveButton(getString(R.string.ok), (dialogInterface, id) ->
                         mListener.onDialogPositiveClick(this, mTitleID,
                                 cbEnabled.isChecked(), rbFilter.getLeftPinValue(), rbFilter.getRightPinValue()))
-                .setNegativeButton("Cancel", (dialogInterface, i) ->
+                .setNegativeButton(getString(R.string.cancel), (dialogInterface, i) ->
                         mListener.onDialogNegativeClick(this));
 
         setUpCheckbox();
@@ -92,15 +101,19 @@ public class FilterDialogFragment extends DialogFragment {
     }
 
     private void setUpRangeBar() {
-        // first set end, then start
+        // set min and max values
+        // ! first end, then start
         rbFilter.setTickEnd(mTickEnd);
         rbFilter.setTickStart(mTickStart);
+        // set current filter values (ticks) if they're less than min/max values
+        if (mLeftValue >= mTickStart && mRightValue <= mTickEnd)
+            rbFilter.setRangePinsByValue(mLeftValue, mRightValue);
         rbFilter.setTickInterval(1);
     }
 
     private void setUpCheckbox() {
         // update checkbox and rangebar state on creation
-        if (!mIsEnabled) {
+        if (!mIsFilterEnabled) {
             cbEnabled.setChecked(false);
             rbFilter.setEnabled(false);
         } else {

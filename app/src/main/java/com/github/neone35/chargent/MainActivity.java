@@ -38,11 +38,17 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
     private final String KEY_CURRENT_SUBTITLE = "current-subtitle";
     private MapFragment mMapFragment;
     private CarListFragment mListFragment;
-    public static boolean BATTERY_FILTER_ENABLED = false;
-    public static boolean PLATE_FILTER_ENABLED = false;
+    private boolean BATTERY_FILTER_ENABLED = false;
+    int BATTERY_MIN = -1;
+    int BATTERY_MAX = -1;
+    int BATTERY_FILTER_START = -1;
+    int BATTERY_FILTER_END = -1;
+    private boolean PLATE_FILTER_ENABLED = false;
+    int PLATE_MIN = -1;
+    int PLATE_MAX = -1;
+    int PLATE_FILTER_START = -1;
+    int PLATE_FILTER_END = -1;
     CompositeDisposable disps = new CompositeDisposable();
-    public int BATTERY_MIN = 0;
-    public int BATTERY_MAX = 0;
 
     @BindView(R.id.bnv_main)
     BottomNavigationView bnvMain;
@@ -92,8 +98,17 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
         super.onStart();
         Disposable disposable = carVM.getState()
         .subscribe(carsState -> {
-            BATTERY_MAX = carsState.mBatteryMax;
+            // get filter values after last filter change
+            BATTERY_FILTER_ENABLED = carsState.mBatteryFilterEnabled;
             BATTERY_MIN = carsState.mBatteryMin;
+            BATTERY_MAX = carsState.mBatteryMax;
+            BATTERY_FILTER_START = carsState.mBatteryFilterStart;
+            BATTERY_FILTER_END = carsState.mBatteryFilterEnd;
+            PLATE_FILTER_ENABLED = carsState.mPlateFilterEnabled;
+            PLATE_MIN = carsState.mPlateMin;
+            PLATE_MAX = carsState.mPlateMax;
+            PLATE_FILTER_START = carsState.mPlateFilterStart;
+            PLATE_FILTER_END = carsState.mPlateFilterEnd;
         });
         disps.add(disposable);
     }
@@ -102,6 +117,42 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
     protected void onStop() {
         super.onStop();
         disps.dispose();
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        String savedSubtitle = savedInstanceState.getString(KEY_CURRENT_SUBTITLE);
+        setActionBar(appName, savedSubtitle);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (mFragmentManager.getFragments().contains(mMapFragment)) {
+            outState.putString(KEY_CURRENT_SUBTITLE, mapTitle);
+        } else if (mFragmentManager.getFragments().contains(mListFragment)) {
+            outState.putString(KEY_CURRENT_SUBTITLE, listTitle);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+
+    private void setDebugConfig() {
+        Stetho.initializeWithDefaults(this);
+        Logger.addLogAdapter(new AndroidLogAdapter());
+    }
+
+    private void setActionBar(String title, String subTitle) {
+        ActionBar ab = getSupportActionBar();
+        if (ab != null) {
+            ab.setTitle(title);
+            ab.setSubtitle(subTitle);
+        }
     }
 
     private void inflateFragment(Fragment fragment, boolean inflateCurrent) {
@@ -144,29 +195,6 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
         return null;
     }
 
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        String savedSubtitle = savedInstanceState.getString(KEY_CURRENT_SUBTITLE);
-        setActionBar(appName, savedSubtitle);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        if (mFragmentManager.getFragments().contains(mMapFragment)) {
-            outState.putString(KEY_CURRENT_SUBTITLE, mapTitle);
-        } else if (mFragmentManager.getFragments().contains(mListFragment)) {
-            outState.putString(KEY_CURRENT_SUBTITLE, listTitle);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
-
-
     private void listenBnv() {
         bnvMain.setOnNavigationItemSelectedListener(menuItem -> {
             int selectedItemId = menuItem.getItemId();
@@ -182,19 +210,6 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
             }
             return true;
         });
-    }
-
-    private void setDebugConfig() {
-        Stetho.initializeWithDefaults(this);
-        Logger.addLogAdapter(new AndroidLogAdapter());
-    }
-
-    private void setActionBar(String title, String subTitle) {
-        ActionBar ab = getSupportActionBar();
-        if (ab != null) {
-            ab.setTitle(title);
-            ab.setSubtitle(subTitle);
-        }
     }
 
     @Override
@@ -214,30 +229,25 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.menu_appbar_filter_plate:
-                showFilterDialog(R.string.set_plate_number_filter, true, 0, 0);
-                return true;
             case R.id.menu_appbar_filter_battery:
-                showFilterDialog(R.string.set_battery_filter, true,
-                        BATTERY_MIN, BATTERY_MAX);
+                showFilterDialog(R.string.set_battery_filter, BATTERY_FILTER_ENABLED,
+                        BATTERY_MIN, BATTERY_MAX, BATTERY_FILTER_START, BATTERY_FILTER_END);
                 return true;
+            case R.id.menu_appbar_filter_plate:
+            showFilterDialog(R.string.set_plate_number_filter, PLATE_FILTER_ENABLED,
+                        PLATE_MIN, PLATE_MAX, PLATE_FILTER_START, PLATE_FILTER_END);
+            return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    private boolean internetExists() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm != null) {
-            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-            return activeNetwork.isConnectedOrConnecting();
-        }
-        return false;
-    }
-
-    public void showFilterDialog(int titleID, boolean isEnabled, int tickStart, int tickEnd) {
+    public void showFilterDialog(int titleID, boolean isEnabled,
+                                 int tickStart, int tickEnd,
+                                 int leftValue, int rightValue) {
         // Create an instance of the dialog fragment and show it
-        DialogFragment dialog = FilterDialogFragment.newInstance(titleID, isEnabled, tickStart, tickEnd);
+        DialogFragment dialog = FilterDialogFragment.newInstance(titleID, isEnabled, tickStart,
+                tickEnd, leftValue, rightValue);
         dialog.show(mFragmentManager, "FilterDialogFragment");
     }
 
@@ -248,19 +258,32 @@ public class MainActivity extends AppCompatActivity implements FilterDialogFragm
         switch (titleID) {
             case R.string.set_battery_filter:
                 BATTERY_FILTER_ENABLED = isEnabled;
-                carVM.setBatteryFilter(Integer.parseInt(leftValue),Integer.parseInt(rightValue));
+                carVM.setBatteryFilter(Integer.parseInt(leftValue),Integer.parseInt(rightValue), BATTERY_FILTER_ENABLED);
                 inflateFragment(
                         getCurrentFragmentInstance(mFragmentManager.getFragments().get(0)),
                         true);
+                break;
             case R.string.set_plate_number_filter:
                 PLATE_FILTER_ENABLED = isEnabled;
+                carVM.setPlateFilter(Integer.parseInt(leftValue),Integer.parseInt(rightValue), PLATE_FILTER_ENABLED);
+                inflateFragment(
+                        getCurrentFragmentInstance(mFragmentManager.getFragments().get(0)),
+                        true);
+                break;
         }
-//        mMapFragment = MapFragment.newInstance();
-//        inflateFragment(mMapFragment);
     }
 
     @Override
     public void onDialogNegativeClick(DialogFragment dialog) {
         dialog.dismiss();
+    }
+
+    private boolean internetExists() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            return activeNetwork.isConnectedOrConnecting();
+        }
+        return false;
     }
 }
