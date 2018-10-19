@@ -8,9 +8,9 @@ This is a technical task provided by "MediaPark" for Android Developer position.
 1. Display cars on map.
 2. Display cars in a list. Don't forget to show images.
 3. Create filter and sort for cars:
-3.1. Filter by Plate number
-3.2. Filter by remaining battery
-3.3. Sort by distance from user
+   * Filter by Plate number
+   * Filter by remaining battery
+   * Sort by distance from user
 4. Add easy way to switch between Map/List/Filter views.
 
 Bonus:
@@ -19,10 +19,13 @@ Bonus:
 7. Rx
 
 ## Screenshots
-coming soon
+![Chargent user interface](https://image.ibb.co/kb8oo0/chargent-app.jpg "Chargent user interface")
 
 ## What Did I Learn / Use?
 - [Spark API](https://development.espark.lt/api/mobile/public/availablecars)
 - MVVM architecture pattern
 - RxJava
 > Including permissions & location
+- AndroidX
+- Parceler
+- Material range bar

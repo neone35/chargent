@@ -6,7 +6,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.0'
+        classpath 'com.android.tools.build:gradle:3.2.1'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -29,6 +29,7 @@ ext {
     butterknife_v = '9.0.0-SNAPSHOT' // AndroidX compatible
     retrofit_v = '2.4.0'
     glide_v = '4.8.0'
+    play_v = '16.0.0'
 }
 
 task clean(type: Delete) {

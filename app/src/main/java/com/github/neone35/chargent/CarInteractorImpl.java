@@ -16,7 +16,7 @@ public class CarInteractorImpl implements CarInteractor {
 
     private CarService carService;
 
-    CarInteractorImpl() {
+    public CarInteractorImpl() {
         OkHttpClient okClient = new OkHttpClient.Builder()
                 .addNetworkInterceptor(new StethoInterceptor())
                 .build();
